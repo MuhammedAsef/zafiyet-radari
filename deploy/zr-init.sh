@@ -85,7 +85,7 @@ SMTP_HOST=smtp-relay.brevo.com
 SMTP_PORT=587
 SMTP_USERNAME=DEGISTIR
 SMTP_PASSWORD=DEGISTIR
-SMTP_FROM_ADDRESS=bildirim@muhammedasef.com
+SMTP_FROM_ADDRESS=bildirim@radar.muhammedasef.com
 EOF
   chmod 600 "$APP_DIR/.env"
   echo "Oluşturuldu: $APP_DIR/.env  (SMTP_USERNAME ve SMTP_PASSWORD'ü sonra doldur)"
