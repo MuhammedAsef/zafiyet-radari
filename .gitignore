@@ -1,0 +1,29 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.rsuser
+.vs/
+.idea/
+.vscode/
+*.swp
+
+## Test / coverage
+TestResults/
+coverage*.xml
+*.coverage
+
+## Secrets
+.env
+appsettings.*.local.json
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Claude masaüstü uygulaması
+Claude outputs/
+
+## Windows'ta yanlışlıkla oluşan dosya ("> nul")
+nul

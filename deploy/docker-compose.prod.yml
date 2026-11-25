@@ -1,0 +1,131 @@
+# Zafiyet Radarı — production. Sunucuda /opt/zafiyet-radari altında durur.
+# Değerler iki dosyadan gelir:
+#   .env          sırlar ve sabit ayarlar (root, 600; repoya girmez)
+#   release.env   çalışan sürüm etiketi (zr-deploy yazar)
+#
+# Ağlar:
+#   db    internal: internete çıkışı yok. SQL Server sadece burada; dışarıya hiçbir port açılmaz.
+#   edge  Web ve Worker'ın dış dünyaya (OSV, KEV, EPSS, SMTP) çıkışı. Web'in portu sadece 127.0.0.1'e
+#         bağlanır; internetten erişim yalnızca sunucudaki nginx (TLS) üzerinden olur.
+#         Not: Docker'ın yayınladığı portlar ufw'yu atlar; bu yüzden 0.0.0.0 asla kullanılmaz.
+
+name: zafiyet-radari
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+x-app-env: &app-env
+  DOTNET_ENVIRONMENT: Production
+  ASPNETCORE_ENVIRONMENT: Production
+  App__PublicBaseUrl: https://${PUBLIC_HOST:?PUBLIC_HOST tanımlı değil}
+  Smtp__Host: ${SMTP_HOST:?SMTP_HOST tanımlı değil}
+  Smtp__Port: ${SMTP_PORT:-587}
+  Smtp__EnableSsl: "true"
+  Smtp__UserName: ${SMTP_USERNAME:?SMTP_USERNAME tanımlı değil}
+  Smtp__Password: ${SMTP_PASSWORD:?SMTP_PASSWORD tanımlı değil}
+  Smtp__FromAddress: ${SMTP_FROM_ADDRESS:?SMTP_FROM_ADDRESS tanımlı değil}
+  Smtp__FromName: Zafiyet Radarı
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      # Express: ücretsiz ve üretimde kullanım lisanslı (Developer sürümü üretimde kullanılamaz).
+      MSSQL_PID: Express
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?MSSQL_SA_PASSWORD tanımlı değil}
+      MSSQL_MEMORY_LIMIT_MB: "2560"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    networks: [db]
+    mem_limit: 3g
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" -b -o /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # Tek seferlik: şema script'leri, Hangfire tabloları, uygulama login'leri.
+  # zr-deploy her sürümde "run --rm migrator" ile çalıştırır. Yetkili (sa) bağlantıyı sadece bu konteyner görür.
+  migrator:
+    <<: *hardening
+    image: ${IMAGE_PREFIX:?IMAGE_PREFIX tanımlı değil}/zafiyet-radari-migrator:${RELEASE_TAG:?RELEASE_TAG tanımlı değil}
+    profiles: ["tools"]
+    restart: "no"
+    tmpfs: ["/tmp:size=64m"]
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      ConnectionStrings__Default: "Server=mssql,1433;Database=ZafiyetRadari;User Id=sa;Password=${MSSQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+      DatabaseLogins__WebPassword: ${ZR_WEB_DB_PASSWORD:?ZR_WEB_DB_PASSWORD tanımlı değil}
+      DatabaseLogins__WorkerPassword: ${ZR_WORKER_DB_PASSWORD:?ZR_WORKER_DB_PASSWORD tanımlı değil}
+    networks: [db]
+    depends_on:
+      mssql:
+        condition: service_healthy
+
+  web:
+    <<: *hardening
+    image: ${IMAGE_PREFIX}/zafiyet-radari-web:${RELEASE_TAG}
+    tmpfs: ["/tmp:size=64m"]
+    environment:
+      <<: *app-env
+      ASPNETCORE_HTTP_PORTS: "8080"
+      AllowedHosts: ${PUBLIC_HOST}
+      ConnectionStrings__Default: "Server=mssql,1433;Database=ZafiyetRadari;User Id=zr_web;Password=${ZR_WEB_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+      # nginx'in bağlantısı konteynere edge ağının geçidinden gelir; X-Forwarded-* sadece ondan kabul edilir.
+      ReverseProxy__KnownProxies__0: 172.30.0.1
+      DataProtection__CertificatePath: /run/secrets/dataprotection.pfx
+      DataProtection__CertificatePassword: ${DATAPROTECTION_CERT_PASSWORD:?DATAPROTECTION_CERT_PASSWORD tanımlı değil}
+    volumes:
+      - ./secrets/dataprotection.pfx:/run/secrets/dataprotection.pfx:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks: [db, edge]
+    mem_limit: 768m
+    depends_on:
+      mssql:
+        condition: service_healthy
+
+  worker:
+    <<: *hardening
+    image: ${IMAGE_PREFIX}/zafiyet-radari-worker:${RELEASE_TAG}
+    environment:
+      <<: *app-env
+      ConnectionStrings__Default: "Server=mssql,1433;Database=ZafiyetRadari;User Id=zr_worker;Password=${ZR_WORKER_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+    volumes:
+      # OSV arşivi (yüzlerce MB) geçici dosyaya iner: RAM'de değil diskte dursun.
+      # Klasör sahibi konteyner kullanıcısı (UID 1654), zr-init oluşturur.
+      - ./data/worker-tmp:/tmp
+    networks: [db, edge]
+    mem_limit: 1536m
+    depends_on:
+      mssql:
+        condition: service_healthy
+
+networks:
+  db:
+    internal: true
+  edge:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+          gateway: 172.30.0.1
+
+volumes:
+  mssql-data:

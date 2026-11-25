@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ZafiyetRadari.Worker": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

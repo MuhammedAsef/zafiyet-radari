@@ -1,0 +1,14 @@
+M:Microsoft.EntityFrameworkCore.RelationalQueryableExtensions.FromSqlRaw``1(Microsoft.EntityFrameworkCore.DbSet{``0},System.String,System.Object[]);SQL injection riski. FromSql($"...") kullan: interpolasyon otomatik SqlParameter'a dönüşür.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRaw(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade,System.String,System.Object[]);SQL injection riski. ExecuteSql($"...") kullan.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRaw(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade,System.String,System.Collections.Generic.IEnumerable{System.Object});SQL injection riski. ExecuteSql($"...") kullan.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRawAsync(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade,System.String,System.Threading.CancellationToken);SQL injection riski. ExecuteSqlAsync($"...") kullan.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRawAsync(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade,System.String,System.Object[]);SQL injection riski. ExecuteSqlAsync($"...") kullan.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRawAsync(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade,System.String,System.Collections.Generic.IEnumerable{System.Object},System.Threading.CancellationToken);SQL injection riski. ExecuteSqlAsync($"...") kullan.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.SqlQueryRaw``1(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade,System.String,System.Object[]);SQL injection riski. SqlQuery($"...") kullan.
+M:Microsoft.Data.SqlClient.SqlParameterCollection.AddWithValue(System.String,System.Object);Tip ve boyut belirtilmeli. SqlCommandExtensions.WithParameter kullan.
+M:Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper.Raw(System.String);XSS riski. Kullanıcı veya dış kaynak verisi encode edilmeden basılamaz.
+M:Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper.Raw(System.Object);XSS riski. Kullanıcı veya dış kaynak verisi encode edilmeden basılamaz.
+T:System.Security.Cryptography.MD5;Kırık hash algoritması. SHA256 veya HMACSHA256 kullan.
+T:System.Security.Cryptography.SHA1;Zayıf hash algoritması. SHA256 kullan.
+T:System.Random;Tahmin edilebilir. Güvenlik gerektiren yerlerde RandomNumberGenerator kullan.
+T:Newtonsoft.Json.TypeNameHandling;Güvensiz deserializasyon riski. System.Text.Json kullan.

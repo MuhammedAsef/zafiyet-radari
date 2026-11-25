@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ZafiyetRadari.Domain/ZafiyetRadari.Domain.csproj" />
+    <Project Path="src/ZafiyetRadari.Application/ZafiyetRadari.Application.csproj" />
+    <Project Path="src/ZafiyetRadari.Infrastructure/ZafiyetRadari.Infrastructure.csproj" />
+    <Project Path="src/ZafiyetRadari.Web/ZafiyetRadari.Web.csproj" />
+    <Project Path="src/ZafiyetRadari.Worker/ZafiyetRadari.Worker.csproj" />
+    <Project Path="src/ZafiyetRadari.Migrator/ZafiyetRadari.Migrator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ZafiyetRadari.UnitTests/ZafiyetRadari.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="docker-compose.yml" />
+    <File Path="README.md" />
+  </Folder>
+</Solution>

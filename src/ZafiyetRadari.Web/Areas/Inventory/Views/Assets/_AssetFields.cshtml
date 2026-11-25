@@ -1,0 +1,27 @@
+@model AssetFormModel
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label"></label>
+    <input asp-for="Name" class="form-control" placeholder="ör. odeme-api, kurumsal-web" autofocus />
+    <span asp-validation-for="Name" class="text-danger small"></span>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-sm-6">
+        <label asp-for="Environment" class="form-label"></label>
+        <select asp-for="Environment" asp-items="InventoryLabels.Environments()" class="form-select"></select>
+        <span asp-validation-for="Environment" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="Criticality" class="form-label"></label>
+        <select asp-for="Criticality" asp-items="InventoryLabels.Criticalities()" class="form-select"></select>
+        <span asp-validation-for="Criticality" class="text-danger small"></span>
+    </div>
+</div>
+
+<div class="form-check mb-3">
+    <input asp-for="IsInternetFacing" class="form-check-input" />
+    <label asp-for="IsInternetFacing" class="form-check-label"></label>
+</div>

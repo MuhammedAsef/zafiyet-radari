@@ -1,0 +1,36 @@
+@{
+    ViewData["Title"] = "Profil";
+    var confirmed = ViewData["EmailConfirmed"] is true;
+}
+
+<div class="row">
+    <div class="col-lg-6">
+        <h1 class="h4 mb-3">Profil</h1>
+        <dl class="row">
+            <dt class="col-4">E-posta</dt>
+            <dd class="col-8">
+                @ViewData["Email"]
+                @if (confirmed)
+                {
+                    <span class="badge text-bg-success ms-1">Doğrulandı</span>
+                }
+                else
+                {
+                    <span class="badge text-bg-warning ms-1">Doğrulanmadı</span>
+                }
+            </dd>
+            <dt class="col-4">Sistem rolü</dt>
+            <dd class="col-8">@ViewData["Roles"]</dd>
+        </dl>
+
+        @if (!confirmed)
+        {
+            <div class="alert alert-warning">
+                E-posta adresin doğrulanmadan sana bildirim maili gönderilmez.
+            </div>
+            <form asp-action="ResendConfirmation" method="post">
+                <button type="submit" class="btn btn-primary btn-sm">Doğrulama mailini tekrar gönder</button>
+            </form>
+        }
+    </div>
+</div>

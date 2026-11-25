@@ -1,0 +1,19 @@
+@model AssetGroupDetails
+@{
+    ViewData["Title"] = "Grubu sil";
+}
+
+<div class="row">
+    <div class="col-lg-6">
+        <h1 class="h4 mb-3">"@Model.Name" grubunu sil</h1>
+        <div class="alert alert-danger">
+            Bu işlem geri alınamaz. Gruptaki <strong>@Model.Assets.Count varlık</strong>, tüm bileşenleri, yüklemeleri
+            ve bulguları kalıcı olarak silinir. Üyelerin erişimi kalkar.
+        </div>
+
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+            <button type="submit" class="btn btn-danger">Evet, kalıcı olarak sil</button>
+            <a class="btn btn-link" asp-action="Details" asp-route-id="@Model.Id">Vazgeç</a>
+        </form>
+    </div>
+</div>

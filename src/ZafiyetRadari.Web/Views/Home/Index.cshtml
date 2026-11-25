@@ -1,0 +1,203 @@
+@model DashboardViewModel
+@using ZafiyetRadari.Application.Abstractions.Identity
+@{
+    ViewData["Title"] = "Genel Bakış";
+    var s = Model.Data.Summary;
+    var isAdmin = User.IsInRole(AppRoles.Admin);
+}
+
+@{
+    var urgent = s.NowCount > 0;
+}
+
+<section class="scope-hero" aria-labelledby="overview-title">
+    <div class="scope" role="img" aria-label="@(urgent ? $"{s.NowCount} acil bulgu" : "Acil bulgu yok")">
+        <span class="scope-sweep"></span>
+        @if (s.NowCount > 0) { <span class="blip blip-now"></span> }
+        @if (s.ThisWeekCount > 0) { <span class="blip blip-week"></span> }
+        @if (s.PlanCount > 0) { <span class="blip blip-plan"></span> }
+        <div class="scope-readout">
+            <div class="scope-count @(urgent ? "is-urgent" : "")">@s.NowCount</div>
+            <div class="scope-label">hemen ilgilen</div>
+        </div>
+    </div>
+
+    <div>
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <h1 class="hero-title" id="overview-title">Genel bakış</h1>
+            @if (Model.Groups.Count > 1)
+            {
+                <form method="get" asp-action="Index" class="d-flex gap-2">
+                    <select name="groupId" class="form-select form-select-sm" aria-label="Grup">
+                        <option value="">Tüm gruplarım</option>
+                        @foreach (var group in Model.Groups)
+                        {
+                            <option value="@group.Id" selected="@(group.Id == Model.Data.AssetGroupId)">@group.Name</option>
+                        }
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Göster</button>
+                </form>
+            }
+        </div>
+
+        @if (Model.Groups.Count == 0)
+        {
+            <p class="hero-sentence">Henüz izlenen bir şey yok. Bir grup oluştur, varlığını ekle ve <code>package-lock.json</code>, <code>packages.lock.json</code> ya da CycloneDX SBOM dosyasını yükle; eşleştirme kendiliğinden başlar.</p>
+            <a class="btn btn-primary" asp-area="Inventory" asp-controller="Groups" asp-action="Create">Grup oluştur</a>
+        }
+        else
+        {
+            <p class="hero-sentence">
+                <strong>@s.AssetCount varlıkta @s.ActiveComponentCount bileşen</strong> izleniyor.
+                @if (urgent)
+                {
+                    <text><strong>@s.NowCount bulgu</strong> bugün ilgilenmeni bekliyor.</text>
+                }
+                else
+                {
+                    <text>Şu an acil bir bulgu yok.</text>
+                }
+            </p>
+
+            <dl class="hero-stats">
+                <div class="stat-week">
+                    <dt>Bu hafta çözülmeli</dt>
+                    <dd>@s.ThisWeekCount</dd>
+                </div>
+                <div>
+                    <dt>Açık bulgu</dt>
+                    <dd>@s.OpenCount <small>@s.InReviewCount incelemede</small></dd>
+                </div>
+                <div class="stat-kev">
+                    <dt>Aktif istismarda (KEV)</dt>
+                    <dd>@s.KevOpenCount</dd>
+                </div>
+                <div>
+                    <dt>Ortalama düzeltme süresi</dt>
+                    <dd>@(s.MeanTimeToResolveDays is { } mttr ? mttr.ToString("0.#") : "–") <small>gün, son 90 gün</small></dd>
+                </div>
+            </dl>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" asp-area="Findings" asp-controller="Findings" asp-action="Index" asp-route-priority="@(urgent ? "Now" : null)" asp-route-groupId="@Model.Data.AssetGroupId">
+                    @(urgent ? "Acil bulgulara git" : "Bulgulara git")
+                </a>
+                <a class="btn btn-outline-secondary" asp-area="Inventory" asp-controller="Groups" asp-action="Index">Varlıkları yönet</a>
+            </div>
+        }
+    </div>
+</section>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h6">Son @DashboardLimits.TrendDays gün: açılan ve kapanan bulgular</h2>
+            <div class="chart-box"><canvas id="trendChart" aria-label="Açılan ve kapanan bulgu trendi" role="img"></canvas></div>
+        </div></div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h6">Açık bulgular, önceliğe göre</h2>
+            <div class="chart-box"><canvas id="priorityChart" aria-label="Önceliğe göre dağılım" role="img"></canvas></div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h6">En riskli varlıklar</h2>
+            @if (Model.Data.TopAssets.Count == 0)
+            {
+                <p class="text-secondary small mb-0">Açık bulgu yok.</p>
+            }
+            else
+            {
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Varlık</th><th class="text-end">Hemen</th><th class="text-end">Açık</th><th class="text-end">En yüksek risk</th></tr></thead>
+                    <tbody>
+                        @foreach (var asset in Model.Data.TopAssets)
+                        {
+                            <tr>
+                                <td><a asp-area="Findings" asp-controller="Findings" asp-action="Index" asp-route-assetId="@asset.AssetId">@asset.Name</a></td>
+                                <td class="text-end">@asset.NowCount</td>
+                                <td class="text-end">@asset.OpenCount</td>
+                                <td class="text-end">@asset.MaxRiskScore.ToString("0.0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h6">En çok bulgu üreten paketler</h2>
+            @if (Model.Data.TopPackages.Count == 0)
+            {
+                <p class="text-secondary small mb-0">Açık bulgu yok.</p>
+            }
+            else
+            {
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Paket</th><th class="text-end">Açık bulgu</th><th class="text-end">En yüksek risk</th></tr></thead>
+                    <tbody>
+                        @foreach (var package in Model.Data.TopPackages)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge text-bg-secondary me-1">@package.Ecosystem</span>
+                                    <a asp-area="Findings" asp-controller="Findings" asp-action="Index" asp-route-search="@package.Name" asp-route-groupId="@Model.Data.AssetGroupId"><code>@package.Name</code></a>
+                                </td>
+                                <td class="text-end">@package.OpenCount</td>
+                                <td class="text-end">@package.MaxRiskScore.ToString("0.0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h2 class="h6">Zafiyet veri kaynakları</h2>
+        <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Kaynak</th><th>Son başarılı</th><th>Son deneme</th><th class="text-end">Son işlenen kayıt</th><th>Durum</th></tr></thead>
+            <tbody>
+                @foreach (var feed in Model.Data.Feeds)
+                {
+                    <tr>
+                        <td>@feed.Source</td>
+                        <td class="small">@(feed.LastSuccessAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "–")</td>
+                        <td class="small text-secondary">@(feed.LastAttemptAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "–")</td>
+                        <td class="text-end small">@feed.ItemsProcessed</td>
+                        <td class="small">
+                            @if (feed.IsFailing)
+                            {
+                                <span class="feed-dot is-failing" aria-hidden="true"></span><text>Son deneme başarısız</text>
+                                @* Hata metni iç adres/ayrıntı içerebilir: sadece yöneticiye gösterilir. *@
+                                if (isAdmin)
+                                {
+                                    <div class="text-secondary text-break">@feed.LastError</div>
+                                }
+                            }
+                            else
+                            {
+                                <span class="feed-dot" aria-hidden="true"></span><text>Güncel</text>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script type="application/json" id="dashboard-data">@Json.Serialize(Model.ChartData)</script>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.min.js" asp-append-version="true"></script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}

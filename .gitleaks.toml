@@ -1,0 +1,11 @@
+# gitleaks: varsayılan kurallar + bilinçli istisnalar.
+# Buraya sadece GERÇEK OLMAYAN, herkesin bildiği geliştirme değerleri eklenir.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Yerel Docker SQL Server'ın varsayılan geliştirme şifresi (sadece 127.0.0.1, production'da kullanılmaz)"
+condition = "AND"
+paths = ['''^\.env\.example$''', '''^docker-compose\.yml$''']
+regexes = ['''Dev_Passw0rd!''']

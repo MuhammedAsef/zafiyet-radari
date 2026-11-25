@@ -1,0 +1,259 @@
+@model GroupDetailsViewModel
+@{
+    var group = Model.Group;
+    ViewData["Title"] = group.Name;
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a asp-action="Index">Gruplar</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@group.Name</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">@group.Name</h1>
+        @if (!string.IsNullOrEmpty(group.Description))
+        {
+            <p class="text-secondary mb-1">@group.Description</p>
+        }
+        <span class="badge text-bg-secondary">Rolün: @InventoryLabels.Of(group.MyRole)</span>
+    </div>
+    @if (Model.CanManage)
+    {
+        <div class="d-flex gap-2">
+            <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@group.Id">Düzenle</a>
+            <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@group.Id">Sil</a>
+        </div>
+    }
+</div>
+
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 m-0">Varlıklar</h2>
+        @if (Model.CanEdit)
+        {
+            <a class="btn btn-sm btn-primary" asp-controller="Assets" asp-action="Create" asp-route-groupId="@group.Id">Yeni varlık</a>
+        }
+    </div>
+
+    @if (group.Assets.Count == 0)
+    {
+        <p class="text-secondary">Bu grupta henüz varlık yok.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Varlık</th>
+                        <th>Ortam</th>
+                        <th>Kritiklik</th>
+                        <th>İnternete açık</th>
+                        <th class="text-end">Aktif bileşen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var asset in group.Assets)
+                    {
+                        <tr>
+                            <td><a asp-controller="Assets" asp-action="Details" asp-route-id="@asset.Id" class="fw-semibold">@asset.Name</a></td>
+                            <td>@InventoryLabels.Of(asset.Environment)</td>
+                            <td><span class="badge @InventoryLabels.CriticalityBadge(asset.Criticality)">@InventoryLabels.Of(asset.Criticality)</span></td>
+                            <td>@(asset.IsInternetFacing ? "Evet" : "Hayır")</td>
+                            <td class="text-end">@asset.ActiveComponentCount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section>
+    <h2 class="h5 mb-2">Üyeler</h2>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Kullanıcı</th>
+                    <th>Rol</th>
+                    <th>Eklenme</th>
+                    @if (Model.CanManage)
+                    {
+                        <th class="text-end">İşlem</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var member in group.Members)
+                {
+                    <tr>
+                        <td>@member.DisplayName</td>
+                        <td>
+                            @if (Model.CanManage)
+                            {
+                                <form asp-action="ChangeRole" asp-route-id="@group.Id" method="post" class="d-flex gap-2 m-0">
+                                    <input type="hidden" name="userId" value="@member.UserId" />
+                                    <select name="role" class="form-select form-select-sm w-auto" asp-items="InventoryLabels.Roles(member.Role)" aria-label="Rol"></select>
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Kaydet</button>
+                                </form>
+                            }
+                            else
+                            {
+                                @InventoryLabels.Of(member.Role)
+                            }
+                        </td>
+                        <td class="small text-secondary">@member.AddedAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
+                        @if (Model.CanManage)
+                        {
+                            <td class="text-end">
+                                <form asp-action="RemoveMember" asp-route-id="@group.Id" method="post" class="m-0">
+                                    <input type="hidden" name="userId" value="@member.UserId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Çıkar</button>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.CanManage)
+    {
+        <form asp-action="AddMember" asp-route-id="@group.Id" method="post" class="row g-2 align-items-end" novalidate>
+            <div class="col-md-5">
+                <label asp-for="NewMember.Email" class="form-label small"></label>
+                <input asp-for="NewMember.Email" class="form-control form-control-sm" placeholder="kisi@ornek.com" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="NewMember.Role" class="form-label small"></label>
+                <select asp-for="NewMember.Role" asp-items="InventoryLabels.Roles(Model.NewMember.Role)" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Üye ekle</button>
+            </div>
+            <div class="col-12 small text-secondary">
+                Kişinin önce kayıt olmuş olması gerekir. Görüntüleyici sadece okur; düzenleyici varlık ekler ve dosya yükler; sahip üyeleri yönetir.
+            </div>
+        </form>
+    }
+</section>
+
+@if (Model.Notifications is { } notifications)
+{
+    <section class="mt-5">
+        <h2 class="h5 mb-2">Bildirimler</h2>
+        <p class="small text-secondary">
+            Yeni veya yeniden açılan bulgular, eşleştirme bittiğinde kanal başına tek bir özet mail olarak gönderilir.
+            Alıcı, e-postası doğrulanmış bir grup üyesi olmalı.
+        </p>
+
+        @if (notifications.Channels.Count == 0)
+        {
+            <p class="text-secondary">Henüz bildirim kanalı yok.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Kanal</th>
+                            <th>Alıcı</th>
+                            <th>Kural</th>
+                            <th>Durum</th>
+                            <th>Son gönderim</th>
+                            @if (Model.CanManage)
+                            {
+                                <th class="text-end">İşlem</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var channel in notifications.Channels)
+                        {
+                            <tr class="@(channel.IsEnabled ? "" : "text-secondary")">
+                                <td>@channel.Name</td>
+                                <td class="small">@channel.Target</td>
+                                <td class="small">
+                                    @FindingLabels.Of(channel.MinPriority) ve daha acil
+                                    @if (channel.OnlyKev)
+                                    {
+                                        <span class="badge text-bg-danger ms-1">sadece KEV / kötü amaçlı</span>
+                                    }
+                                </td>
+                                <td class="small">@(channel.IsEnabled ? "Açık" : "Kapalı")</td>
+                                <td class="small text-secondary">@(channel.LastSentAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "–")</td>
+                                @if (Model.CanManage)
+                                {
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <form asp-action="TestChannel" asp-route-id="@Model.Group.Id" method="post" class="m-0">
+                                                <input type="hidden" name="channelId" value="@channel.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary">Test</button>
+                                            </form>
+                                            <form asp-action="ToggleChannel" asp-route-id="@Model.Group.Id" method="post" class="m-0">
+                                                <input type="hidden" name="channelId" value="@channel.Id" />
+                                                <input type="hidden" name="enabled" value="@(channel.IsEnabled ? "false" : "true")" />
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary">@(channel.IsEnabled ? "Kapat" : "Aç")</button>
+                                            </form>
+                                            <form asp-action="DeleteChannel" asp-route-id="@Model.Group.Id" method="post" class="m-0">
+                                                <input type="hidden" name="channelId" value="@channel.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (Model.CanManage)
+        {
+            if (notifications.Recipients.Count == 0)
+            {
+                <div class="alert alert-warning small">
+                    E-postası doğrulanmış üye yok. Üyeler sağ üstteki profil sayfasından adreslerini doğrulayabilir.
+                </div>
+            }
+            else
+            {
+                <form asp-action="AddChannel" asp-route-id="@Model.Group.Id" method="post" class="row g-2 align-items-end" novalidate>
+                    <div class="col-md-3">
+                        <label asp-for="NewChannel.Name" class="form-label small"></label>
+                        <input asp-for="NewChannel.Name" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="NewChannel.RecipientUserId" class="form-label small"></label>
+                        <select asp-for="NewChannel.RecipientUserId" class="form-select form-select-sm">
+                            @foreach (var recipient in notifications.Recipients)
+                            {
+                                <option value="@recipient.UserId">@recipient.Email</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label asp-for="NewChannel.MinPriority" class="form-label small"></label>
+                        <select asp-for="NewChannel.MinPriority" asp-items="FindingLabels.Priorities(Model.NewChannel.MinPriority)" class="form-select form-select-sm"></select>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check">
+                            <input asp-for="NewChannel.OnlyKev" class="form-check-input" />
+                            <label asp-for="NewChannel.OnlyKev" class="form-check-label small"></label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-sm btn-primary w-100">Kanal ekle</button>
+                    </div>
+                </form>
+            }
+        }
+    </section>
+}

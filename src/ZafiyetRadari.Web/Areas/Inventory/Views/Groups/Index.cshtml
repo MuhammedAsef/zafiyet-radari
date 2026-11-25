@@ -1,0 +1,54 @@
+@model IReadOnlyList<AssetGroupListItem>
+@{
+    ViewData["Title"] = "Varlık grupları";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 m-0">Varlık grupları</h1>
+    <a class="btn btn-primary" asp-action="Create">Yeni grup</a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="card">
+        <div class="card-body">
+            <p class="mb-2">Henüz bir grubun yok.</p>
+            <p class="text-secondary small mb-0">
+                Grup; varlıkları (uygulama, servis, sunucu) ve onları görebilecek kişileri bir araya getirir.
+                Örnek: "Ödeme Ekibi", "Kurumsal Web".
+            </p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Grup</th>
+                    <th>Rolüm</th>
+                    <th class="text-end">Varlık</th>
+                    <th class="text-end">Üye</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var group in Model)
+                {
+                    <tr>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@group.Id" class="fw-semibold">@group.Name</a>
+                            @if (!string.IsNullOrEmpty(group.Description))
+                            {
+                                <div class="small text-secondary">@group.Description</div>
+                            }
+                        </td>
+                        <td><span class="badge text-bg-secondary">@InventoryLabels.Of(group.MyRole)</span></td>
+                        <td class="text-end">@group.AssetCount</td>
+                        <td class="text-end">@group.MemberCount</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

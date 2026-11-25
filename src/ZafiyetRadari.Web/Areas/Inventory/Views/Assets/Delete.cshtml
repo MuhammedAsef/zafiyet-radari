@@ -1,0 +1,19 @@
+@model AssetDetails
+@{
+    ViewData["Title"] = "Varlığı sil";
+}
+
+<div class="row">
+    <div class="col-lg-6">
+        <h1 class="h4 mb-3">"@Model.Name" varlığını sil</h1>
+        <div class="alert alert-danger">
+            Bu işlem geri alınamaz. <strong>@Model.ActiveComponentCount aktif bileşen</strong>, pasif bileşenler,
+            yükleme geçmişi ve bu varlığa ait tüm bulgular kalıcı olarak silinir.
+        </div>
+
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+            <button type="submit" class="btn btn-danger">Evet, kalıcı olarak sil</button>
+            <a class="btn btn-link" asp-action="Details" asp-route-id="@Model.Id">Vazgeç</a>
+        </form>
+    </div>
+</div>

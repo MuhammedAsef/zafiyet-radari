@@ -1,0 +1,23 @@
+# İmaja sadece derleme için gerekenler girer. Sırlar ve yerel çıktılar hiçbir zaman.
+**/bin/
+**/obj/
+**/TestResults/
+**/*.user
+**/appsettings.Development.json
+**/appsettings.*.local.json
+.env
+.env.*
+!.env.example
+.git/
+.github/
+.vs/
+.vscode/
+.idea/
+tests/
+deploy/
+scripts/
+Claude outputs/
+*.md
+docker-compose*.yml
+Dockerfile
+.dockerignore

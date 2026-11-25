@@ -1,0 +1,192 @@
+@model FindingDetailsViewModel
+@{
+    var f = Model.Finding;
+    var title = f.Aliases.FirstOrDefault(a => a.StartsWith("CVE-", StringComparison.Ordinal)) ?? f.ExternalId;
+    ViewData["Title"] = title;
+    var otherIds = f.Aliases.Prepend(f.ExternalId).Where(a => a != title).Distinct().ToList();
+    var assetContext = $"{InventoryLabels.Of(f.AssetEnvironment)}, {InventoryLabels.Of(f.AssetCriticality)} kritiklik" + (f.AssetIsInternetFacing ? ", internete açık" : "");
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a asp-action="Index">Bulgular</a></li>
+        <li class="breadcrumb-item"><a asp-area="Inventory" asp-controller="Groups" asp-action="Details" asp-route-id="@f.AssetGroupId">@f.AssetGroupName</a></li>
+        <li class="breadcrumb-item"><a asp-area="Inventory" asp-controller="Assets" asp-action="Details" asp-route-id="@f.AssetId">@f.AssetName</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@title</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+    <div>
+        <h1 class="h3 mb-1">@title</h1>
+        @if (otherIds.Count > 0)
+        {
+            <div class="small text-secondary mb-2">Diğer kimlikler: @string.Join(", ", otherIds)</div>
+        }
+        <div class="d-flex flex-wrap gap-2">
+            <span class="badge @FindingLabels.Badge(f.Priority)">Öncelik: @FindingLabels.Of(f.Priority)</span>
+            <span class="badge text-bg-dark border">Risk @f.RiskScore.ToString("0.0") / 100</span>
+            <span class="badge @FindingLabels.Badge(f.Status)">@FindingLabels.Of(f.Status)</span>
+            @if (f.IsMaliciousPackage)
+            {
+                <span class="badge text-bg-danger">Kötü amaçlı paket</span>
+            }
+            @if (f.IsKev)
+            {
+                <span class="badge text-bg-danger">CISA KEV</span>
+            }
+            @if (f.KevRansomware)
+            {
+                <span class="badge text-bg-danger">Fidye yazılımı</span>
+            }
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(f.Summary))
+{
+    <p class="lead">@f.Summary</p>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h6">Etkilenen bileşen</h2>
+            <p class="mb-2"><code>@($"{f.PackageName}@{f.Version}")</code> <span class="badge text-bg-secondary">@f.Ecosystem</span>
+                @if (!f.ComponentIsActive)
+                {
+                    <span class="badge text-bg-secondary">pasif</span>
+                }
+            </p>
+            @if (f.RecommendedVersion is not null)
+            {
+                <div class="alert alert-success py-2 mb-2">
+                    Önerilen sürüm: <code>@f.RecommendedVersion</code> veya üstü.
+                </div>
+            }
+            else if (f.FixedVersions.Count == 0)
+            {
+                <div class="alert alert-warning py-2 mb-2">Düzeltilmiş sürüm yayımlanmamış. Paketi kaldırmayı veya alternatif kullanmayı değerlendir.</div>
+            }
+            @if (f.FixedVersions.Count > 0)
+            {
+                <div class="small text-secondary">Düzeltilmiş sürümler: @string.Join(", ", f.FixedVersions)</div>
+            }
+            <div class="small text-secondary mt-2">Eşleşme güveni: @FindingLabels.Of(f.Confidence)</div>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h6">Neden bu öncelik?</h2>
+            <ul class="small mb-2">
+                @foreach (var factor in f.RiskFactors)
+                {
+                    <li>@factor</li>
+                }
+            </ul>
+            <dl class="row small mb-0">
+                <dt class="col-5">CVSS</dt>
+                <dd class="col-7">@(f.CvssScore?.ToString("0.0") ?? "–") <span class="text-secondary text-break">@f.CvssVector</span></dd>
+                <dt class="col-5">EPSS</dt>
+                <dd class="col-7">@FindingLabels.Percent(f.EpssScore) <span class="text-secondary">(yüzdelik @FindingLabels.Percent(f.EpssPercentile))</span></dd>
+                @if (f.IsKev)
+                {
+                    <dt class="col-5">KEV'e eklenme</dt>
+                    <dd class="col-7">@(f.KevAddedAt?.ToString("dd.MM.yyyy")) (CISA son tarih: @(f.KevDueDate?.ToString("dd.MM.yyyy")))</dd>
+                }
+                <dt class="col-5">Varlık</dt>
+                <dd class="col-7">@assetContext</dd>
+            </dl>
+        </div></div>
+    </div>
+</div>
+
+@if (Model.CanEdit)
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h6">Durumu değiştir</h2>
+            <form asp-action="ChangeStatus" asp-route-id="@f.Id" method="post" class="row g-2" novalidate>
+                <div class="col-md-3">
+                    <label asp-for="Form.NewStatus" class="form-label small"></label>
+                    <select asp-for="Form.NewStatus" asp-items="FindingLabels.TargetStatuses(f.Status)" class="form-select form-select-sm"></select>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Form.RiskAcceptedUntil" class="form-label small"></label>
+                    <input asp-for="Form.RiskAcceptedUntil" type="date" class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Form.Comment" class="form-label small"></label>
+                    <textarea asp-for="Form.Comment" rows="2" class="form-control form-control-sm" maxlength="@FindingLimits.MaxCommentLength"></textarea>
+                </div>
+                <div class="col-12 d-flex justify-content-between align-items-center">
+                    <span class="small text-secondary">
+                        Risk kabulü ve yanlış alarm için gerekçe zorunlu; risk kabulü en fazla @FindingLimits.MaxRiskAcceptanceDays gün,
+                        süresi dolunca bulgu otomatik yeniden açılır. "Düzeltildi" işaretlenen bulgu, bileşen hâlâ etkilenen sürümdeyse
+                        bir sonraki taramada yeniden açılır.
+                    </span>
+                    <button type="submit" class="btn btn-sm btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(f.Details))
+{
+    <section class="mb-4">
+        <h2 class="h5">Açıklama</h2>
+        @* Kaynak metni (markdown) HTML olarak yorumlanmaz; Razor encode eder, satır sonları CSS ile korunur. *@
+        <div class="card"><div class="card-body small pre-wrap">@f.Details</div></div>
+    </section>
+}
+
+@if (f.References.Count > 0)
+{
+    <section class="mb-4">
+        <h2 class="h5">Kaynaklar</h2>
+        <ul class="small">
+            @foreach (var reference in f.References)
+            {
+                <li>
+                    <span class="badge text-bg-secondary me-1">@reference.Type</span>
+                    @if (FindingLabels.IsSafeLink(reference.Url))
+                    {
+                        <a href="@reference.Url" target="_blank" rel="noopener noreferrer nofollow" class="text-break">@reference.Url</a>
+                    }
+                    else
+                    {
+                        <span class="text-break">@reference.Url</span>
+                    }
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+<section>
+    <h2 class="h5">Geçmiş</h2>
+    <div class="table-responsive">
+        <table class="table table-sm small align-middle">
+            <thead><tr><th>Tarih</th><th>Değişiklik</th><th>Kim</th><th>Açıklama</th></tr></thead>
+            <tbody>
+                @foreach (var h in f.History)
+                {
+                    <tr>
+                        <td class="text-nowrap">@h.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                        <td class="text-nowrap">@(h.FromStatus is null ? "" : FindingLabels.Of(h.FromStatus.Value) + " → ")@FindingLabels.Of(h.ToStatus)</td>
+                        <td>@h.ChangedBy</td>
+                        <td>@h.Comment</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <p class="small text-secondary">
+        İlk görülme @f.FirstSeenAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm"), son görülme @f.LastSeenAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm").
+        @if (f.RiskAcceptedUntil is not null)
+        {
+            <text>Risk kabulü @f.RiskAcceptedUntil.Value.ToString("dd.MM.yyyy") tarihinde bitiyor.</text>
+        }
+    </p>
+</section>

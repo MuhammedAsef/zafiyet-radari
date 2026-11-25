@@ -1,0 +1,132 @@
+@model FindingIndexViewModel
+@{
+    ViewData["Title"] = "Bulgular";
+    var filter = Model.Filter;
+    var results = Model.Findings;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 m-0">Bulgular <span class="text-secondary h6">(@results.TotalCount)</span></h1>
+    <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Export" asp-route-priority="@filter.Priority" asp-route-status="@filter.Status"
+           asp-route-closed="@filter.IncludeClosed" asp-route-groupId="@filter.AssetGroupId" asp-route-assetId="@filter.AssetId"
+           asp-route-search="@filter.Search">CSV indir</a>
+        @if (filter.AssetId is not null)
+        {
+            <a class="btn btn-sm btn-outline-secondary" asp-area="Inventory" asp-controller="Assets" asp-action="Details" asp-route-id="@filter.AssetId">Varlığa dön</a>
+        }
+    </div>
+</div>
+
+<form method="get" asp-action="Index" class="row g-2 align-items-end mb-3">
+    <input type="hidden" name="assetId" value="@filter.AssetId" />
+    <div class="col-md-3">
+        <label class="form-label small" for="search">Ara</label>
+        <input id="search" type="search" name="search" value="@filter.Search" maxlength="@FindingFilter.MaxSearchLength"
+               class="form-control form-control-sm" placeholder="Paket, CVE veya GHSA" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small" for="priority">Öncelik</label>
+        <select id="priority" name="priority" class="form-select form-select-sm" asp-items="FindingLabels.Priorities(filter.Priority)">
+            <option value="">Tümü</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small" for="status">Durum</label>
+        <select id="status" name="status" class="form-select form-select-sm" asp-items="FindingLabels.Statuses(filter.Status)">
+            <option value="">Aksiyon bekleyen</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small" for="groupId">Grup</label>
+        <select id="groupId" name="groupId" class="form-select form-select-sm">
+            <option value="">Tüm gruplarım</option>
+            @foreach (var group in Model.Groups)
+            {
+                <option value="@group.Id" selected="@(group.Id == filter.AssetGroupId)">@group.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2 align-items-center">
+        <div class="form-check m-0">
+            <input id="closed" type="checkbox" name="closed" value="true" class="form-check-input" checked="@filter.IncludeClosed" />
+            <label for="closed" class="form-check-label small">Kapalılar</label>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">Filtrele</button>
+    </div>
+</form>
+
+@if (results.Items.Count == 0)
+{
+    <div class="card"><div class="card-body text-secondary">
+        Bu filtreyle bulgu yok. Varlıklarına bileşen ekledikçe veya dosya yükledikçe eşleştirme arka planda çalışır ve bulgular burada görünür.
+    </div></div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Öncelik</th>
+                    <th class="text-end">Risk</th>
+                    <th>Zafiyet</th>
+                    <th>Paket</th>
+                    <th>Varlık</th>
+                    <th>Durum</th>
+                    <th>İlk görülme</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in results.Items)
+                {
+                    <tr>
+                        <td><span class="badge @FindingLabels.Badge(item.Priority)">@FindingLabels.Of(item.Priority)</span></td>
+                        <td class="text-end">@item.RiskScore.ToString("0.0")</td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@item.Id" class="fw-semibold">@(item.CveId ?? item.ExternalId)</a>
+                            @if (item.IsKev)
+                            {
+                                <span class="badge text-bg-danger ms-1" title="Gerçek saldırılarda istismar ediliyor">KEV</span>
+                            }
+                            @if (item.Confidence == MatchConfidenceLevel.Low)
+                            {
+                                <span class="badge text-bg-secondary ms-1" title="Sürüm aralığı belirsiz">Doğrula</span>
+                            }
+                            @if (!string.IsNullOrEmpty(item.Summary))
+                            {
+                                <div class="small text-secondary text-truncate finding-summary">@item.Summary</div>
+                            }
+                        </td>
+                        <td><code>@($"{item.PackageName}@{item.Version}")</code></td>
+                        <td class="small">
+                            <a asp-area="Inventory" asp-controller="Assets" asp-action="Details" asp-route-id="@item.AssetId">@item.AssetName</a>
+                            <div class="text-secondary">@item.AssetGroupName</div>
+                        </td>
+                        <td><span class="badge @FindingLabels.Badge(item.Status)">@FindingLabels.Of(item.Status)</span></td>
+                        <td class="small text-secondary">@item.FirstSeenAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (results.TotalPages > 1)
+    {
+        <nav aria-label="Sayfalar">
+            <ul class="pagination pagination-sm">
+                <li class="page-item @(results.Page <= 1 ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(results.Page - 1)" asp-route-priority="@filter.Priority"
+                       asp-route-status="@filter.Status" asp-route-closed="@filter.IncludeClosed" asp-route-groupId="@filter.AssetGroupId"
+                       asp-route-assetId="@filter.AssetId" asp-route-search="@filter.Search">Önceki</a>
+                </li>
+                <li class="page-item disabled"><span class="page-link">@results.Page / @results.TotalPages</span></li>
+                <li class="page-item @(results.Page >= results.TotalPages ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(results.Page + 1)" asp-route-priority="@filter.Priority"
+                       asp-route-status="@filter.Status" asp-route-closed="@filter.IncludeClosed" asp-route-groupId="@filter.AssetGroupId"
+                       asp-route-assetId="@filter.AssetId" asp-route-search="@filter.Search">Sonraki</a>
+                </li>
+            </ul>
+        </nav>
+    }
+}

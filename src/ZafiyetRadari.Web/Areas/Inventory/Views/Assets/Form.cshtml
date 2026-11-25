@@ -1,0 +1,49 @@
+@model AssetFormModel
+@{
+    var isEdit = Model.Id is not null;
+    ViewData["Title"] = isEdit ? "Varlığı düzenle" : "Yeni varlık";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a asp-controller="Groups" asp-action="Index">Gruplar</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Groups" asp-action="Details" asp-route-id="@Model.AssetGroupId">@(Model.AssetGroupName ?? "Grup")</a></li>
+        @if (isEdit)
+        {
+            <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id">@Model.Name</a></li>
+        }
+        <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-6">
+        <h1 class="h4 mb-3">@ViewData["Title"]</h1>
+
+        @if (isEdit)
+        {
+            <form asp-action="Edit" asp-route-id="@Model.Id" method="post" novalidate>
+                <partial name="_AssetFields" model="Model" />
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+                <a class="btn btn-link" asp-action="Details" asp-route-id="@Model.Id">Vazgeç</a>
+            </form>
+        }
+        else
+        {
+            <form asp-action="Create" asp-route-groupId="@Model.AssetGroupId" method="post" novalidate>
+                <partial name="_AssetFields" model="Model" />
+                <button type="submit" class="btn btn-primary">Oluştur</button>
+                <a class="btn btn-link" asp-controller="Groups" asp-action="Details" asp-route-id="@Model.AssetGroupId">Vazgeç</a>
+            </form>
+        }
+    </div>
+    <div class="col-lg-5 offset-lg-1 small text-secondary mt-4 mt-lg-0">
+        <p class="fw-semibold mb-1">Bu alanlar ne işe yarar?</p>
+        <p>Risk skoru sadece CVSS'e bakmaz; varlığın bağlamını da hesaba katar.</p>
+        <ul>
+            <li><strong>Ortam:</strong> üretimdeki zafiyet, geliştirme ortamındakinden daha önceliklidir.</li>
+            <li><strong>Kritiklik:</strong> iş açısından ne kadar önemli (ödeme sistemi = kritik).</li>
+            <li><strong>İnternete açık:</strong> dışarıdan erişilebilen sistemlerde öncelik artar.</li>
+        </ul>
+    </div>
+</div>

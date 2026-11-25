@@ -1,0 +1,725 @@
+/* ==========================================================================
+   Zafiyet Radarı — Hangfire paneli teması (/ops/jobs)
+   Hangfire'ın Bootstrap 3 + hangfire.css stillerinden sonra yüklenir ve onları ezer.
+   Renkler site.css'teki tokenlarla aynıdır; Hangfire'ın kendi koyu modu kapalı.
+   Bu dosya birleşik CSS'in ortasına eklendiği için @import kullanılamaz:
+   fontlar doğrudan /lib/fonts altından tanımlanır.
+   ========================================================================== */
+
+@font-face {
+  font-family: "Chakra Petch";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url("/lib/fonts/chakra-petch-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Chakra Petch";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url("/lib/fonts/chakra-petch-latin-ext-600-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url("/lib/fonts/instrument-sans-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url("/lib/fonts/instrument-sans-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --zr-night: #070d18;
+  --zr-panel: #0e1829;
+  --zr-panel-raised: #13203a;
+  --zr-line: #1d2c45;
+  --zr-line-strong: #2a3d5c;
+  --zr-text: #d7e1ee;
+  --zr-heading: #f3f7fc;
+  --zr-muted: #8a9bb4;
+  --zr-phosphor: #34e0b4;
+  --zr-phosphor-hover: #7ff0d2;
+  --zr-now: #ff5a6a;
+  --zr-week: #f4b740;
+  --zr-plan: #4fa3ff;
+  --zr-watch: #7c8ba6;
+  --zr-fixed: #3ccf7e;
+  --zr-display: "Chakra Petch", "Segoe UI", sans-serif;
+  --zr-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --zr-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --zr-radius-panel: 14px;
+  --zr-radius-control: 8px;
+  --zr-radius-chip: 6px;
+  color-scheme: dark;
+}
+
+/* --- Zemin ve yazı --------------------------------------------------------- */
+
+html,
+body {
+  background-color: var(--zr-night);
+}
+
+body {
+  color: var(--zr-text);
+  font-family: var(--zr-body);
+  font-size: 15px;
+  line-height: 1.55;
+  padding-top: 88px;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  color: var(--zr-heading);
+  font-family: var(--zr-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+h1 small, h2 small, h3 small, h4 small,
+.text-muted {
+  color: var(--zr-muted);
+}
+
+a {
+  color: var(--zr-phosphor);
+}
+
+a:hover,
+a:focus {
+  color: var(--zr-phosphor-hover);
+}
+
+a:focus-visible,
+.btn:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--zr-phosphor);
+  outline-offset: 2px;
+}
+
+hr {
+  border-top-color: var(--zr-line);
+}
+
+::selection {
+  background: rgba(52, 224, 180, 0.28);
+}
+
+.page-header {
+  border-bottom: 1px solid var(--zr-line);
+  padding-bottom: 14px;
+  margin-bottom: 24px;
+}
+
+.page-header,
+h1.page-header {
+  font-size: 30px;
+}
+
+/* --- Üst çubuk ------------------------------------------------------------- */
+
+.navbar-default {
+  background-color: rgba(14, 24, 41, 0.92);
+  border: 0;
+  border-bottom: 1px solid var(--zr-line);
+  backdrop-filter: blur(10px);
+  min-height: 60px;
+}
+
+.navbar-default .navbar-brand {
+  color: var(--zr-heading);
+  font-family: var(--zr-display);
+  font-weight: 600;
+  font-size: 18px;
+  height: 60px;
+  line-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Marka işaretinin yanında küçük bir radar noktası */
+.navbar-default .navbar-brand::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--zr-phosphor);
+  box-shadow: 0 0 0 4px rgba(52, 224, 180, 0.16), 0 0 14px rgba(52, 224, 180, 0.6);
+  flex: none;
+}
+
+.navbar-default .navbar-brand:hover,
+.navbar-default .navbar-brand:focus {
+  color: #fff;
+}
+
+.navbar-default .navbar-nav > li > a {
+  color: var(--zr-muted);
+  font-weight: 500;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid transparent;
+}
+
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-nav > li > a:focus {
+  color: var(--zr-heading);
+  background-color: transparent;
+}
+
+.navbar-default .navbar-nav > .active > a,
+.navbar-default .navbar-nav > .active > a:hover,
+.navbar-default .navbar-nav > .active > a:focus {
+  color: var(--zr-heading);
+  background-color: transparent;
+  border-bottom-color: var(--zr-phosphor);
+}
+
+.navbar-default .navbar-collapse,
+.navbar-default .navbar-form {
+  border-color: var(--zr-line);
+}
+
+.navbar-default .navbar-toggle {
+  border-color: var(--zr-line-strong);
+  margin-top: 13px;
+}
+
+.navbar-default .navbar-toggle:hover,
+.navbar-default .navbar-toggle:focus {
+  background-color: var(--zr-panel-raised);
+}
+
+.navbar-default .navbar-toggle .icon-bar {
+  background-color: var(--zr-text);
+}
+
+@media (max-width: 767px) {
+  .navbar-default .navbar-collapse {
+    background-color: var(--zr-panel);
+  }
+
+  .navbar-default .navbar-nav > li > a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-bottom: 0;
+  }
+}
+
+/* --- Sayaç rozetleri (menüdeki 0, 7, 2 gibi) ------------------------------ */
+
+span.metric {
+  background-color: transparent;
+  border: 1px solid var(--zr-line-strong);
+  border-radius: 999px;
+  color: var(--zr-muted);
+  font-family: var(--zr-display);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 1px 7px;
+  min-width: 22px;
+}
+
+span.metric.highlighted,
+span.metric-default.highlighted {
+  background-color: rgba(138, 155, 180, 0.14);
+  color: var(--zr-text) !important; /* hangfire.css burada !important kullanıyor */
+  border-color: transparent;
+}
+
+span.metric-info.highlighted    { background-color: rgba(79, 163, 255, 0.16); color: var(--zr-plan) !important; }
+span.metric-warning.highlighted { background-color: rgba(244, 183, 64, 0.16); color: var(--zr-week) !important; }
+span.metric-success.highlighted { background-color: rgba(60, 207, 126, 0.16); color: var(--zr-fixed) !important; }
+span.metric-danger.highlighted  { background-color: rgba(255, 90, 106, 0.18); color: var(--zr-now) !important; }
+
+/* --- Genel bakış kutuları --------------------------------------------------- */
+
+div.metric {
+  background-color: var(--zr-panel);
+  border: 1px solid var(--zr-line);
+  border-radius: var(--zr-radius-panel);
+  box-shadow: none;
+  color: var(--zr-text);
+}
+
+div.metric.metric-default {
+  border-color: var(--zr-line);
+}
+
+div.metric .metric-body {
+  color: var(--zr-heading);
+  font-family: var(--zr-display);
+  font-weight: 600;
+  font-size: 30px;
+  padding-top: 18px;
+}
+
+div.metric .metric-description {
+  color: var(--zr-muted);
+  font-size: 13px;
+  padding-bottom: 18px;
+}
+
+div.metric-info    { border-color: rgba(79, 163, 255, 0.5); }
+div.metric-warning { border-color: rgba(244, 183, 64, 0.5); }
+div.metric-success { border-color: rgba(60, 207, 126, 0.5); }
+div.metric-danger  { border-color: rgba(255, 90, 106, 0.55); }
+
+div.metric-info .metric-body    { color: var(--zr-plan); }
+div.metric-warning .metric-body { color: var(--zr-week); }
+div.metric-success .metric-body { color: var(--zr-fixed); }
+div.metric-danger .metric-body  { color: var(--zr-now); }
+
+a.clickable-metric:hover div.metric,
+a.clickable-metric:focus div.metric {
+  border-color: var(--zr-line-strong);
+  background-color: var(--zr-panel-raised);
+}
+
+/* --- Sol liste (iş durumları) ---------------------------------------------- */
+
+#stats .list-group-item {
+  background-color: var(--zr-panel);
+  border-color: var(--zr-line);
+  color: var(--zr-muted);
+}
+
+#stats .list-group-item:first-child {
+  border-top-left-radius: var(--zr-radius-panel);
+  border-top-right-radius: var(--zr-radius-panel);
+}
+
+#stats .list-group-item:last-child {
+  border-bottom-left-radius: var(--zr-radius-panel);
+  border-bottom-right-radius: var(--zr-radius-panel);
+}
+
+#stats a.list-group-item {
+  color: var(--zr-muted);
+}
+
+#stats a.list-group-item:hover,
+#stats a.list-group-item:focus {
+  color: var(--zr-heading);
+  background-color: var(--zr-panel-raised);
+}
+
+#stats .list-group-item.active,
+#stats .list-group-item.active:hover,
+#stats .list-group-item.active:focus {
+  color: var(--zr-heading);
+  background-color: var(--zr-panel-raised);
+  border-color: var(--zr-line);
+  box-shadow: inset 3px 0 0 var(--zr-phosphor);
+}
+
+.list-group-item {
+  background-color: var(--zr-panel);
+  border-color: var(--zr-line);
+}
+
+/* --- Tablolar ---------------------------------------------------------------- */
+
+.table {
+  color: var(--zr-text);
+  background-color: var(--zr-panel);
+  border: 1px solid var(--zr-line);
+  border-radius: var(--zr-radius-panel);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+.table .table {
+  background-color: transparent;
+  border: 0;
+}
+
+.table > thead > tr > th {
+  color: var(--zr-muted);
+  font-weight: 600;
+  font-size: 13px;
+  background-color: var(--zr-panel-raised);
+  border-bottom: 1px solid var(--zr-line);
+}
+
+.table > thead > tr > th,
+.table > tbody > tr > th,
+.table > tbody > tr > td,
+.table > tfoot > tr > td {
+  border-top-color: var(--zr-line);
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: rgba(138, 155, 180, 0.04);
+}
+
+.table-hover > tbody > tr:hover,
+.table > tbody > tr.hover:hover > td,
+.table > tbody > tr.hover:hover > th {
+  background-color: var(--zr-panel-raised);
+}
+
+.table > tbody > tr.highlight > td,
+.table > tbody > tr.highlight > th,
+.table > tbody > tr.highlight:hover > td,
+.table > tbody > tr.highlight:hover > th {
+  background-color: rgba(52, 224, 180, 0.1);
+  border-color: var(--zr-line);
+}
+
+.table-vertical tbody > tr > th {
+  color: var(--zr-muted);
+  background-color: var(--zr-panel-raised);
+}
+
+.table td.failed-job-details {
+  background-color: rgba(255, 90, 106, 0.06);
+}
+
+.table-responsive {
+  border: 0;
+}
+
+/* --- Butonlar ---------------------------------------------------------------- */
+
+.btn {
+  border-radius: var(--zr-radius-control);
+  font-weight: 600;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-default {
+  background-color: var(--zr-panel-raised);
+  border-color: var(--zr-line-strong);
+  color: var(--zr-text);
+}
+
+.btn-default:hover,
+.btn-default:focus,
+.btn-default.focus {
+  background-color: #1a2a48;
+  border-color: #3a5175;
+  color: var(--zr-heading);
+}
+
+.btn-default.active,
+.btn-default:active,
+a.btn.btn-default.active,
+.btn-group .paginator a.btn.btn-default.active,
+.paginator a.btn.btn-default.active {
+  background-color: rgba(52, 224, 180, 0.14);
+  border-color: rgba(52, 224, 180, 0.55);
+  color: var(--zr-phosphor);
+  box-shadow: none;
+}
+
+.btn-primary {
+  background-color: var(--zr-phosphor);
+  border-color: var(--zr-phosphor);
+  color: #04221a;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+a.btn.btn-primary.active {
+  background-color: var(--zr-phosphor-hover);
+  border-color: var(--zr-phosphor-hover);
+  color: #04221a;
+}
+
+.btn-danger,
+.btn-death {
+  background-color: transparent;
+  border-color: rgba(255, 90, 106, 0.6);
+  color: var(--zr-now);
+}
+
+.btn-danger:hover,
+.btn-danger:focus,
+.btn-death:hover,
+.btn-death:focus,
+a.btn.btn-death.active {
+  background-color: rgba(255, 90, 106, 0.16);
+  border-color: var(--zr-now);
+  color: #ffd2d6;
+}
+
+.btn[disabled],
+.btn.disabled,
+fieldset[disabled] .btn {
+  opacity: 0.45;
+}
+
+fieldset[disabled] .btn-default:hover,
+fieldset[disabled] .btn-primary:hover,
+fieldset[disabled] .btn-death:hover {
+  background-color: inherit;
+}
+
+.paginator .btn {
+  color: var(--zr-text);
+}
+
+.btn-toolbar-label {
+  color: var(--zr-muted);
+}
+
+/* --- Durum etiketleri ---------------------------------------------------------- */
+
+.label {
+  border-radius: var(--zr-radius-chip);
+  font-family: var(--zr-body);
+  font-weight: 600;
+  font-size: 12px;
+  padding: 3px 8px;
+}
+
+.label-state-success,
+.label-success  { background-color: rgba(60, 207, 126, 0.16);  color: var(--zr-fixed); }
+.label-state-danger,
+.label-danger   { background-color: rgba(255, 90, 106, 0.18);  color: var(--zr-now); }
+.label-state-warning,
+.label-warning  { background-color: rgba(244, 183, 64, 0.16);  color: var(--zr-week); }
+.label-state-info,
+.label-info     { background-color: rgba(79, 163, 255, 0.16);  color: var(--zr-plan); }
+.label-state-active,
+.label-primary  { background-color: rgba(52, 224, 180, 0.14);  color: var(--zr-phosphor); }
+.label-state-inactive,
+.label-default  { background-color: rgba(124, 139, 166, 0.18); color: var(--zr-watch); }
+
+a:hover .label-hover.label-state-success  { background-color: rgba(60, 207, 126, 0.28); }
+a:hover .label-hover.label-state-danger   { background-color: rgba(255, 90, 106, 0.3); }
+a:hover .label-hover.label-state-warning  { background-color: rgba(244, 183, 64, 0.28); }
+a:hover .label-hover.label-state-info     { background-color: rgba(79, 163, 255, 0.28); }
+a:hover .label-hover.label-state-active   { background-color: rgba(52, 224, 180, 0.26); }
+a:hover .label-hover.label-state-inactive { background-color: rgba(124, 139, 166, 0.3); }
+
+/* --- Uyarılar ---------------------------------------------------------------- */
+
+.alert {
+  border-radius: var(--zr-radius-control);
+  border-width: 1px;
+}
+
+.alert-success { background-color: rgba(60, 207, 126, 0.1);  border-color: rgba(60, 207, 126, 0.35); color: #b9f0d0; }
+.alert-info    { background-color: rgba(79, 163, 255, 0.1);  border-color: rgba(79, 163, 255, 0.35); color: #c5ddfb; }
+.alert-warning { background-color: rgba(244, 183, 64, 0.1);  border-color: rgba(244, 183, 64, 0.35); color: #f8dda4; }
+.alert-danger  { background-color: rgba(255, 90, 106, 0.1);  border-color: rgba(255, 90, 106, 0.4);  color: #ffc5cb; }
+
+.alert h4 {
+  color: inherit;
+}
+
+/* --- İş detayı: durum kartları ve kod ------------------------------------------ */
+
+.state-card {
+  background-color: var(--zr-panel);
+  border: 1px solid var(--zr-line);
+  border-radius: var(--zr-radius-control);
+}
+
+.state-card-body {
+  background-color: var(--zr-panel-raised);
+  border-bottom-left-radius: var(--zr-radius-control);
+  border-bottom-right-radius: var(--zr-radius-control);
+}
+
+.state-card-state-active   { border-color: rgba(52, 224, 180, 0.5); }
+.state-card-state-success  { border-color: rgba(60, 207, 126, 0.5); }
+.state-card-state-danger   { border-color: rgba(255, 90, 106, 0.55); }
+.state-card-state-warning  { border-color: rgba(244, 183, 64, 0.5); }
+.state-card-state-info     { border-color: rgba(79, 163, 255, 0.5); }
+.state-card-state-inactive { border-color: var(--zr-line-strong); }
+
+.state-card-state-active .state-card-title   { color: var(--zr-phosphor); }
+.state-card-state-success .state-card-title  { color: var(--zr-fixed); }
+.state-card-state-danger .state-card-title   { color: var(--zr-now); }
+.state-card-state-warning .state-card-title  { color: var(--zr-week); }
+.state-card-state-info .state-card-title     { color: var(--zr-plan); }
+.state-card-state-inactive .state-card-title { color: var(--zr-watch); }
+
+.state-card-state-active .state-card-body   { background-color: rgba(52, 224, 180, 0.06); }
+.state-card-state-success .state-card-body  { background-color: rgba(60, 207, 126, 0.06); }
+.state-card-state-danger .state-card-body   { background-color: rgba(255, 90, 106, 0.07); }
+.state-card-state-warning .state-card-body  { background-color: rgba(244, 183, 64, 0.06); }
+.state-card-state-info .state-card-body     { background-color: rgba(79, 163, 255, 0.06); }
+.state-card-state-inactive .state-card-body { background-color: var(--zr-panel-raised); }
+
+.state-card-text,
+.state-card-state-success .state-card-text,
+.state-card-state-danger .state-card-text,
+.state-card-state-warning .state-card-text,
+.state-card-state-info .state-card-text {
+  color: var(--zr-text);
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--zr-mono);
+}
+
+code {
+  background-color: rgba(138, 155, 180, 0.12);
+  color: #a9c6e8;
+  border-radius: 4px;
+}
+
+pre {
+  background-color: var(--zr-panel);
+  border: 1px solid var(--zr-line);
+  border-radius: var(--zr-radius-control);
+  color: var(--zr-text);
+}
+
+pre code {
+  background-color: transparent;
+  color: inherit;
+}
+
+.job-snippet {
+  background-color: var(--zr-panel);
+  border: 1px solid var(--zr-line);
+  border-radius: var(--zr-radius-panel);
+}
+
+.job-snippet-code pre {
+  background-color: transparent;
+  border: 0;
+}
+
+.job-snippet-code code,
+.job-snippet-properties code {
+  color: var(--zr-text);
+}
+
+.job-snippet-properties pre {
+  background-color: var(--zr-panel-raised);
+  border-color: var(--zr-line);
+}
+
+.job-snippet-code pre .comment,
+.job-snippet-code pre .xmldoc { color: #6b7d98; }
+.job-snippet-code pre .keyword { color: #7fb4ff; }
+.job-snippet-code pre .string  { color: #f4c873; }
+.job-snippet-code pre .type    { color: var(--zr-phosphor); }
+
+.stack-trace,
+.st-line { color: var(--zr-text); }
+.st-type,
+.st-method { color: var(--zr-heading); }
+.st-param-name { color: var(--zr-muted); }
+.st-file { color: var(--zr-watch); }
+
+.nav-tabs {
+  border-bottom-color: var(--zr-line);
+}
+
+.nav-tabs > li > a {
+  color: var(--zr-muted);
+}
+
+.nav-tabs > li > a:hover {
+  background-color: var(--zr-panel-raised);
+  border-color: var(--zr-line) var(--zr-line) transparent;
+  color: var(--zr-heading);
+}
+
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  background-color: var(--zr-panel);
+  border-color: var(--zr-line) var(--zr-line) transparent;
+  color: var(--zr-heading);
+}
+
+/* --- Form, açılır menü, ipucu ---------------------------------------------------- */
+
+.form-control {
+  background-color: var(--zr-night);
+  border-color: var(--zr-line-strong);
+  border-radius: var(--zr-radius-control);
+  color: var(--zr-text);
+  box-shadow: none;
+}
+
+.form-control:focus {
+  border-color: var(--zr-phosphor);
+  box-shadow: 0 0 0 3px rgba(52, 224, 180, 0.2);
+}
+
+.dropdown-menu {
+  background-color: var(--zr-panel-raised);
+  border-color: var(--zr-line-strong);
+  border-radius: var(--zr-radius-control);
+}
+
+.dropdown-menu > li > a {
+  color: var(--zr-text);
+}
+
+.dropdown-menu > li > a:hover,
+.dropdown-menu > li > a:focus {
+  background-color: rgba(52, 224, 180, 0.12);
+  color: var(--zr-heading);
+}
+
+.tooltip-inner {
+  background-color: var(--zr-panel-raised);
+  border: 1px solid var(--zr-line-strong);
+  color: var(--zr-text);
+}
+
+.progress {
+  background-color: var(--zr-panel-raised);
+  box-shadow: none;
+}
+
+.progress-bar {
+  background-color: var(--zr-phosphor);
+}
+
+.breadcrumb > .active {
+  color: var(--zr-muted);
+}
+
+/* --- Alt bilgi ---------------------------------------------------------------- */
+
+#footer,
+div#footer {
+  background-color: var(--zr-night);
+  border-top: 1px solid var(--zr-line);
+  color: var(--zr-muted);
+}
+
+#footer a {
+  color: var(--zr-muted);
+}
+
+#footer a:hover {
+  color: var(--zr-phosphor);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}

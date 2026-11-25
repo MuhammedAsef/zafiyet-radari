@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "E-posta doğrulama";
+    var confirmed = ViewData["Confirmed"] is true;
+    var alreadyConfirmed = ViewData["AlreadyConfirmed"] is true;
+}
+
+<div>
+        @if (confirmed)
+        {
+            <h1 class="h4">E-posta adresin doğrulandı</h1>
+            <p>Artık grup bildirimlerini alabilirsin.</p>
+        }
+        else if (alreadyConfirmed)
+        {
+            <h1 class="h4">Bu adres zaten doğrulanmış</h1>
+            <p>Yapman gereken bir şey yok.</p>
+        }
+        else
+        {
+            <h1 class="h4">Link geçersiz veya süresi dolmuş</h1>
+            <p>Giriş yapıp profil sayfasından yeni bir doğrulama maili isteyebilirsin.</p>
+        }
+        <a asp-controller="Home" asp-action="Index">Genel bakışa dön</a>
+</div>
