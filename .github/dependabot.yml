@@ -1,4 +1,7 @@
 # Bağımlılık güncellemeleri: haftalık PR. CI geçmeyen güncelleme birleştirilmez.
+# Proje .NET 10 (LTS) hattında kalır: .NET 11 (STS) paketlerine geçiş bilinçli bir karar olarak
+# elle yapılır. Bu yüzden Microsoft/EF paketlerinde ana sürüm (major) güncellemeleri yok sayılır;
+# yama ve küçük sürümler (güvenlik düzeltmeleri dahil) gelmeye devam eder.
 version: 2
 updates:
   - package-ecosystem: nuget
@@ -7,6 +10,13 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "Microsoft.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "System.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "dotnet-ef"
+        update-types: ["version-update:semver-major"]
     groups:
       microsoft:
         patterns: ["Microsoft.*", "System.*"]
@@ -18,6 +28,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    ignore:
+      - dependency-name: "dotnet/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
