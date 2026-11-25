@@ -34,10 +34,10 @@
 
   <ItemGroup Label="Data">
     <!-- EF Core SqlServer 10.0.0 en az 6.1.1 istiyor (NU1109). -->
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.1.4" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10" />
-    <PackageVersion Include="dbup-sqlserver" Version="6.0.0" />
+    <PackageVersion Include="dbup-sqlserver" Version="7.2.0" />
   </ItemGroup>
 
   <ItemGroup Label="Identity">
