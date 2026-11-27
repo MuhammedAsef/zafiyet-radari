@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ZafiyetRadari.Web.Logging;
 
@@ -22,6 +23,19 @@ public static class WebSecurityExtensions
             options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Strict;
             options.HeaderName = "X-CSRF-TOKEN";
+        });
+
+        // TempData (işlem sonrası "kaydedildi" mesajları) çerezi de diğerleri gibi: sadece HTTPS, script erişemez, __Host- önekli.
+        // Varsayılan ad ve SecurePolicy ile silme yanıtı Secure bayraksız gidiyordu (Mozilla Observatory -5).
+        // SameSite=Lax: e-posta doğrulama linkinden (siteler arası gezinme) sonraki yönlendirmede mesaj kaybolmasın.
+        services.Configure<CookieTempDataProviderOptions>(options =>
+        {
+            options.Cookie.Name = "__Host-zr-tmp";
+            options.Cookie.Path = "/";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.Cookie.IsEssential = true;
         });
 
         services.AddRateLimiter(options =>
