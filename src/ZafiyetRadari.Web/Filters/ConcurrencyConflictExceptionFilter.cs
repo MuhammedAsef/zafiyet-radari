@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using ZafiyetRadari.Application.Abstractions.Persistence;
+using ZafiyetRadari.Web.Logging;
 
 namespace ZafiyetRadari.Web.Filters;
 
@@ -17,7 +18,7 @@ public sealed class ConcurrencyConflictExceptionFilter(ILogger<ConcurrencyConfli
             return;
         }
 
-        logger.LogWarning(exception, "Eş zamanlı değişiklik çakışması: {Path}", context.HttpContext.Request.Path);
+        logger.LogWarning(exception, "Eş zamanlı değişiklik çakışması: {Path}", LogSanitizer.Path(context.HttpContext));
         context.Result = new StatusCodeResult(StatusCodes.Status409Conflict);
         context.ExceptionHandled = true;
     }

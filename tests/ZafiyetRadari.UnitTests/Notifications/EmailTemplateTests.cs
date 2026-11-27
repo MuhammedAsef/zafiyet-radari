@@ -50,6 +50,14 @@ public sealed class EmailTemplateTests
     }
 
     [Theory]
+    [InlineData("ornek.kisi@firma.com", "o***@firma.com")]
+    [InlineData("a@b.com", "a***@b.com")]
+    public void SentMailLog_MasksRecipient(string address, string expected)
+    {
+        Assert.Equal(expected, SmtpEmailSender.MaskAddress(new System.Net.Mail.MailAddress(address)));
+    }
+
+    [Theory]
     [InlineData("https://radar.example.com", true)]
     [InlineData("http://radar.example.com", false)]
     [InlineData("radar.example.com", false)]

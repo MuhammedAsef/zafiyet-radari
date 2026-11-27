@@ -78,9 +78,14 @@ internal sealed class SmtpEmailSender(IOptions<SmtpOptions> options, ILogger<Smt
 
         await client.SendMailAsync(mail, cancellationToken);
 
-        // Alıcı adresi loglanır ama içerik (token içeren linkler) loglanmaz.
-        logger.LogInformation("Mail gönderildi: {To}, konu {Subject}", to.Address, mail.Subject);
+        // Kişisel veri en aza: alıcı adresi maskelenir (teslimat sorununu ayırmak için alan adı yeterli).
+        // İçerik ve konu (grup adı, token içeren linkler) loglanmaz.
+        logger.LogInformation("Mail gönderildi: {Recipient}", MaskAddress(to));
     }
+
+    /// <summary>ornek.kisi@firma.com → o***@firma.com</summary>
+    internal static string MaskAddress(MailAddress address) =>
+        string.IsNullOrEmpty(address.User) ? $"***@{address.Host}" : $"{address.User[0]}***@{address.Host}";
 }
 
 public sealed class AppOptions

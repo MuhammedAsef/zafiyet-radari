@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using ZafiyetRadari.Web.Logging;
 
 namespace ZafiyetRadari.Web.Security;
 
@@ -44,7 +45,7 @@ public static class WebSecurityExtensions
 
                 logger.LogWarning(
                     "Rate limit aşıldı. Yol: {Path}, İstemci: {ClientIp}",
-                    rejected.HttpContext.Request.Path,
+                    LogSanitizer.Path(rejected.HttpContext),
                     ClientKey(rejected.HttpContext));
 
                 return ValueTask.CompletedTask;
