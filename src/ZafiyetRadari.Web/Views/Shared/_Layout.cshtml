@@ -123,12 +123,43 @@
                     <svg class="brand-mark"><use href="#i-radar" /></svg>
                     <span class="brand-name">Zafiyet Radarı</span>
                 </div>
-                <div>
-                    <div class="scope"><span class="scope-sweep"></span><span class="blip blip-now"></span><span class="blip blip-week"></span><span class="blip blip-plan"></span></div>
+                <div class="auth-aside-body">
+                    <div class="holo" data-holo>
+                        <div class="holo-stage">
+                            <div class="holo-floor"></div>
+                            <div class="holo-disc"></div>
+                            <div class="holo-ticks"></div>
+                            <div class="holo-ring holo-ring-outer"></div>
+                            <div class="holo-ring holo-ring-inner"></div>
+                            <div class="holo-sweep"></div>
+                            <div class="holo-core"></div>
+
+                            <div class="holo-target holo-target-now">
+                                <span class="holo-ping"></span>
+                                <span class="holo-dot"></span>
+                                <span class="holo-beam"></span>
+                                <span class="holo-beam holo-beam-cross"></span>
+                                <span class="holo-tag"><b>Hemen</b> lodash 4.17.20<small>CVE-2021-23337</small></span>
+                            </div>
+                            <div class="holo-target holo-target-week">
+                                <span class="holo-ping"></span>
+                                <span class="holo-dot"></span>
+                                <span class="holo-beam"></span>
+                                <span class="holo-beam holo-beam-cross"></span>
+                                <span class="holo-tag"><b>Bu hafta</b> axios 0.21.1<small>CVE-2021-3749</small></span>
+                            </div>
+                            <div class="holo-target holo-target-plan">
+                                <span class="holo-ping"></span>
+                                <span class="holo-dot"></span>
+                                <span class="holo-beam"></span>
+                                <span class="holo-beam holo-beam-cross"></span>
+                                <span class="holo-tag"><b>Planla</b> minimist 1.2.5<small>CVE-2021-44906</small></span>
+                            </div>
+                        </div>
+                    </div>
                     <h2>Bağımlılıklarındaki zafiyetleri, sana ulaşmadan gör.</h2>
                     <p>npm ve NuGet paketlerini OSV, CISA KEV ve EPSS verileriyle eşleştirir; her bulguyu varlığının önemine göre önceliklendirir.</p>
                 </div>
-                <p class="small mb-0">Web Tabanlı Programlama dönem projesi</p>
             </aside>
 
             <main class="auth-main" id="content">
@@ -142,6 +173,7 @@
                 </div>
             </main>
         </div>
+        <script src="~/js/holo.js" asp-append-version="true" defer></script>
     }
 
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js" asp-append-version="true"></script>

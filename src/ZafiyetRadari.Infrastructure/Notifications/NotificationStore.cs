@@ -37,6 +37,7 @@ internal sealed class NotificationStore(ZafiyetRadariDbContext dbContext, ISqlCo
                 c.Target,
                 Rule = c.NotificationRules.OrderBy(r => r.Id).Select(r => new { r.MinPriority, r.OnlyKev }).FirstOrDefault(),
                 c.IsEnabled,
+                c.WeeklyDigest,
                 LastSentAt = c.NotificationLogs.Where(l => l.Status == sent).Max(l => (DateTimeOffset?)l.CreatedAt)
             })
             .ToListAsync(cancellationToken);
@@ -49,7 +50,8 @@ internal sealed class NotificationStore(ZafiyetRadariDbContext dbContext, ISqlCo
                 r.Rule is null ? FindingPriority.Now : (FindingPriority)r.Rule.MinPriority,
                 r.Rule?.OnlyKev ?? false,
                 r.IsEnabled,
-                r.LastSentAt))
+                r.LastSentAt,
+                r.WeeklyDigest))
             .ToList();
     }
 
@@ -76,6 +78,63 @@ internal sealed class NotificationStore(ZafiyetRadariDbContext dbContext, ISqlCo
             .Where(c => c.Id == channelId)
             .Select(c => new ChannelDispatchInfo(c.Id, c.AssetGroupId, c.AssetGroup.Name, c.Target, c.IsEnabled))
             .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<int>> GetDigestChannelIdsAsync(CancellationToken cancellationToken)
+    {
+        const byte email = (byte)NotificationChannelType.Email;
+
+        return await dbContext.NotificationChannels
+            .AsNoTracking()
+            .Where(c => c.IsEnabled && c.WeeklyDigest && c.Type == email)
+            .OrderBy(c => c.Id)
+            .Select(c => c.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    // Özet, bulgu kimliği olmayan "Sent" kaydıyla iz bırakır (bulgu bildirimleri her zaman FindingId taşır).
+    public Task<bool> HasDigestSentSinceAsync(int channelId, DateTimeOffset since, CancellationToken cancellationToken)
+    {
+        const byte sent = (byte)NotificationStatus.Sent;
+
+        return dbContext.NotificationLogs
+            .AsNoTracking()
+            .AnyAsync(l => l.ChannelId == channelId && l.Status == sent && l.FindingId == null && l.CreatedAt >= since, cancellationToken);
+    }
+
+    public async Task<GroupDigest> GetGroupDigestAsync(int assetGroupId, DateTimeOffset since, CancellationToken cancellationToken)
+    {
+        const byte open = (byte)FindingStatus.Open, inReview = (byte)FindingStatus.InReview, fixedStatus = (byte)FindingStatus.Fixed;
+
+        var groupFindings = dbContext.Findings
+            .AsNoTracking()
+            .Where(f => f.Component.Asset.AssetGroupId == assetGroupId);
+
+        var actionable = groupFindings.Where(f => f.Status == open || f.Status == inReview);
+
+        var byPriority = await actionable
+            .GroupBy(f => f.Priority)
+            .Select(g => new { Priority = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var openKev = await actionable.CountAsync(f => f.Vulnerability.IsKev, cancellationToken);
+        var newCount = await groupFindings.CountAsync(f => f.FirstSeenAt >= since, cancellationToken);
+        var fixedCount = await groupFindings.CountAsync(f => f.Status == fixedStatus && f.ResolvedAt >= since, cancellationToken);
+
+        var topIds = await actionable
+            .OrderBy(f => f.Priority).ThenByDescending(f => f.RiskScore).ThenBy(f => f.Id)
+            .Select(f => f.Id)
+            .Take(NotificationLimits.DigestTopFindings)
+            .ToListAsync(cancellationToken);
+
+        IReadOnlyList<FindingEmailItem> top = topIds.Count == 0 ? [] : await GetActionableFindingsAsync(topIds, cancellationToken);
+
+        return new GroupDigest(
+            byPriority.ToDictionary(x => (FindingPriority)x.Priority, x => x.Count),
+            newCount,
+            fixedCount,
+            openKev,
+            top);
+    }
 
     public async Task<bool> IsValidRecipientAsync(int assetGroupId, string email, CancellationToken cancellationToken)
     {
@@ -123,7 +182,8 @@ internal sealed class NotificationStore(ZafiyetRadariDbContext dbContext, ISqlCo
                 AssetName = f.Component.Asset.Name,
                 f.Priority,
                 f.RiskScore,
-                f.Vulnerability.IsKev
+                f.Vulnerability.IsKev,
+                f.Vulnerability.KevAddedAt
             })
             .ToListAsync(cancellationToken);
 
@@ -138,7 +198,8 @@ internal sealed class NotificationStore(ZafiyetRadariDbContext dbContext, ISqlCo
                 (FindingPriority)r.Priority,
                 r.RiskScore,
                 r.IsKev,
-                r.ExternalId.StartsWith("MAL-", StringComparison.Ordinal)))
+                r.ExternalId.StartsWith("MAL-", StringComparison.Ordinal),
+                r.KevAddedAt))
             .ToList();
     }
 

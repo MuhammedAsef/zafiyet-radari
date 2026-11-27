@@ -32,4 +32,13 @@ internal sealed class HangfireNotificationScheduler(IBackgroundJobClient client)
         var ids = findingIds.ToArray();
         client.Enqueue<NotificationJob>(job => job.SendFindingsAsync(channelId, ids, triggeredAt, CancellationToken.None));
     }
+
+    public void ScheduleEscalationNotification(int channelId, IReadOnlyCollection<long> findingIds, DateTimeOffset triggeredAt)
+    {
+        var ids = findingIds.ToArray();
+        client.Enqueue<NotificationJob>(job => job.SendEscalationsAsync(channelId, ids, triggeredAt, CancellationToken.None));
+    }
+
+    public void ScheduleWeeklyDigest(int channelId, DateTimeOffset triggeredAt) =>
+        client.Enqueue<NotificationJob>(job => job.SendWeeklyDigestAsync(channelId, triggeredAt, CancellationToken.None));
 }

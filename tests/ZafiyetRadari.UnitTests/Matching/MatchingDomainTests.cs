@@ -111,6 +111,40 @@ public sealed class MatchingDomainTests
     }
 
     [Fact]
+    public void Reconciler_FlagsEscalation_WhenOpenFindingBecomesMoreUrgent()
+    {
+        // Bulgu "Planla" olarak açıldı; zafiyet sonradan CISA KEV'e eklendi ve öncelik "Hemen"e çıktı.
+        var existing = Finding.Create(1, 100, MatchConfidenceLevel.Exact, 30m, FindingPriority.Plan, Now).Value;
+        var kev = new ScoredMatch(new VersionMatch(1, 100, MatchConfidenceLevel.Exact), new RiskAssessment(90m, FindingPriority.Now, []));
+
+        var result = FindingReconciler.Reconcile([existing], [kev], Now.AddDays(1));
+
+        Assert.Same(existing, Assert.Single(result.EscalatedFindings));
+        Assert.Equal(1, result.Updated);
+    }
+
+    [Fact]
+    public void Reconciler_DoesNotFlagEscalation_WhenPriorityDropsOrStays()
+    {
+        var existing = NewFinding(1, 100); // Hemen
+        var lowered = new ScoredMatch(new VersionMatch(1, 100, MatchConfidenceLevel.Exact), new RiskAssessment(30m, FindingPriority.Plan, []));
+
+        Assert.Empty(FindingReconciler.Reconcile([existing], [lowered], Now.AddDays(1)).EscalatedFindings);
+        Assert.Empty(FindingReconciler.Reconcile([existing], [lowered], Now.AddDays(2)).EscalatedFindings);
+    }
+
+    [Fact]
+    public void Reconciler_DoesNotFlagEscalation_ForUserClosedFinding()
+    {
+        var existing = Finding.Create(1, 100, MatchConfidenceLevel.Exact, 30m, FindingPriority.Plan, Now).Value;
+        existing.ChangeStatus(FindingStatus.FalsePositive, "user-1", "Kullanılmayan kod yolu.", null, Now);
+
+        var result = FindingReconciler.Reconcile([existing], [Scored(1, 100)], Now.AddDays(1));
+
+        Assert.Empty(result.EscalatedFindings);
+    }
+
+    [Fact]
     public void RiskScorer_MaliciousPackage_IsAlwaysNow()
     {
         var result = new DefaultRiskScorer().Assess(new RiskInput(

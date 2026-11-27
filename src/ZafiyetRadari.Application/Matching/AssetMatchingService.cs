@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ZafiyetRadari.Application.Abstractions.Persistence;
 using ZafiyetRadari.Application.Notifications;
+using ZafiyetRadari.Domain.Entities;
 using ZafiyetRadari.Domain.Matching;
 using ZafiyetRadari.Domain.Risk;
 using ZafiyetRadari.Domain.Versioning;
@@ -69,23 +70,24 @@ internal sealed class AssetMatchingService(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Kayıttan sonra: yeni bulguların kimlikleri artık belli. Bildirim kuyruğa alınır, burada mail gönderilmez.
-        var notifiable = result.NewFindings
-            .Concat(result.ReopenedFindings)
-            .Select(f =>
-            {
-                data.RiskData.TryGetValue(f.VulnerabilityId, out var vulnerability);
-                return new NotifiableFinding(f.Id, f.CurrentPriority, vulnerability?.IsKev ?? false, vulnerability?.IsMaliciousPackage ?? false);
-            })
-            .ToList();
+        NotifiableFinding ToNotifiable(Finding f)
+        {
+            data.RiskData.TryGetValue(f.VulnerabilityId, out var vulnerability);
+            return new NotifiableFinding(f.Id, f.CurrentPriority, vulnerability?.IsKev ?? false, vulnerability?.IsMaliciousPackage ?? false);
+        }
 
-        await notifier.NotifyAsync(assetId, notifiable, cancellationToken);
+        var notifiable = result.NewFindings.Concat(result.ReopenedFindings).Select(ToNotifiable).ToList();
+        await notifier.NotifyAsync(assetId, notifiable, FindingNotificationKind.New, cancellationToken);
+
+        var escalated = result.EscalatedFindings.Select(ToNotifiable).ToList();
+        await notifier.NotifyAsync(assetId, escalated, FindingNotificationKind.Escalated, cancellationToken);
 
         var summary = new MatchRunSummary(
             assetId, scored.Count, result.NewFindings.Count, result.Updated, result.Reopened, result.Resolved);
 
         logger.LogInformation(
-            "Varlık {AssetId} eşleştirildi: {Candidates} aday, {Matches} eşleşme, {Created} yeni, {Reopened} yeniden açılan, {Resolved} kapanan bulgu",
-            assetId, data.Candidates.Count, summary.Matches, summary.Created, summary.Reopened, summary.Resolved);
+            "Varlık {AssetId} eşleştirildi: {Candidates} aday, {Matches} eşleşme, {Created} yeni, {Reopened} yeniden açılan, {Escalated} önceliği yükselen, {Resolved} kapanan bulgu",
+            assetId, data.Candidates.Count, summary.Matches, summary.Created, summary.Reopened, escalated.Count, summary.Resolved);
 
         return summary;
     }

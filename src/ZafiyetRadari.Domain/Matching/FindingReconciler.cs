@@ -8,11 +8,16 @@ namespace ZafiyetRadari.Domain.Matching;
 public sealed record ScoredMatch(VersionMatch Match, RiskAssessment Risk);
 
 /// <param name="ReopenedFindings">Regresyonla veya risk kabulü süresi dolarak yeniden açılanlar (bildirim için).</param>
+/// <param name="EscalatedFindings">
+/// Hâlâ açık olup önceliği yükselenler (ör. CISA KEV'e eklendi, EPSS arttı, varlık kritikliği yükseltildi).
+/// Daha önce bildirilmiş bir bulgu artık daha acilse ekip bunu ayrıca duymalı.
+/// </param>
 public sealed record ReconcileResult(
     IReadOnlyList<Finding> NewFindings,
     IReadOnlyList<Finding> ReopenedFindings,
     int Updated,
-    int Resolved)
+    int Resolved,
+    IReadOnlyList<Finding> EscalatedFindings)
 {
     public int Reopened => ReopenedFindings.Count;
 }
@@ -21,6 +26,7 @@ public sealed record ReconcileResult(
 /// Bir varlığın güncel eşleşmelerini mevcut bulgularla uzlaştırır (saf mantık, veritabanı yok):
 /// • Yeni eşleşme → yeni bulgu (Open).
 /// • Devam eden eşleşme → LastSeen + risk güncellenir; "Düzeltildi" olan tekrar görülürse yeniden açılır (regresyon).
+///   Açık bulgunun önceliği yükseldiyse "yükselen" olarak işaretlenir (bildirim için).
 /// • Kaybolan eşleşme → aksiyon bekleyen bulgu sistem tarafından "Düzeltildi" yapılır.
 ///   Risk kabulü ve yanlış alarm kararlarına dokunulmaz: kullanıcının kararıdır.
 /// • Süresi dolan risk kabulleri yeniden açılır.
@@ -41,6 +47,7 @@ public static class FindingReconciler
         var seen = new HashSet<(long, int)>();
         var created = new List<Finding>();
         var reopened = new List<Finding>();
+        var escalated = new List<Finding>();
         int updated = 0, resolved = 0;
 
         foreach (var scored in matches)
@@ -54,6 +61,7 @@ public static class FindingReconciler
             if (index.TryGetValue(key, out var finding))
             {
                 var wasFixed = finding.CurrentStatus == FindingStatus.Fixed;
+                var previousPriority = finding.CurrentPriority;
                 finding.MarkSeen(now);
                 finding.UpdateConfidence(scored.Match.Confidence);
                 finding.UpdateRisk(scored.Risk.Score, scored.Risk.Priority);
@@ -65,6 +73,12 @@ public static class FindingReconciler
                 else
                 {
                     updated++;
+
+                    // Küçük değer daha acil (Now = 1). Kullanıcının kapattığı/kabul ettiği bulgular rahatsız edilmez.
+                    if (finding.IsActionable && finding.CurrentPriority < previousPriority)
+                    {
+                        escalated.Add(finding);
+                    }
                 }
 
                 continue;
@@ -94,6 +108,6 @@ public static class FindingReconciler
             }
         }
 
-        return new ReconcileResult(created, reopened, updated, resolved);
+        return new ReconcileResult(created, reopened, updated, resolved, escalated);
     }
 }

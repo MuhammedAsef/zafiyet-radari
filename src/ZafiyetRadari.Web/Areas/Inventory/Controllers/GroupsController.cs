@@ -163,7 +163,7 @@ public sealed class GroupsController(IAssetGroupService groups, INotificationCha
         }
 
         var result = await notifications.CreateEmailChannelAsync(
-            new CreateEmailChannelCommand(id, model.Name, model.RecipientUserId, model.MinPriority, model.OnlyKev), cancellationToken);
+            new CreateEmailChannelCommand(id, model.Name, model.RecipientUserId, model.MinPriority, model.OnlyKev, model.WeeklyDigest), cancellationToken);
         return RedirectWithResult(result, "Bildirim kanalı eklendi.", nameof(Details), new { id });
     }
 
@@ -172,6 +172,13 @@ public sealed class GroupsController(IAssetGroupService groups, INotificationCha
     {
         var result = await notifications.SetEnabledAsync(id, channelId, enabled, cancellationToken);
         return RedirectWithResult(result, enabled ? "Kanal açıldı." : "Kanal kapatıldı.", nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ToggleDigest(int id, int channelId, bool enabled, CancellationToken cancellationToken)
+    {
+        var result = await notifications.SetWeeklyDigestAsync(id, channelId, enabled, cancellationToken);
+        return RedirectWithResult(result, enabled ? "Haftalık özet açıldı." : "Haftalık özet kapatıldı.", nameof(Details), new { id });
     }
 
     [HttpPost]

@@ -21,6 +21,8 @@ public partial class NotificationChannel
 
     public DateTimeOffset CreatedAt { get; set; }
 
+    public bool WeeklyDigest { get; set; }
+
     public virtual AssetGroup AssetGroup { get; set; } = null!;
 
     public virtual ICollection<NotificationLog> NotificationLogs { get; set; } = new List<NotificationLog>();

@@ -77,6 +77,7 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 app.MapHealthChecks("/health").AllowAnonymous();
+app.MapSecurityTxt();
 
 // Hangfire'ın kendi koyu modu kapalı: panel her zaman uygulamanın temasını kullanır.
 HangfireDashboardTheme.Apply();

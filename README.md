@@ -1,8 +1,49 @@
 # Zafiyet Radarı
 
-Sadece NVD'ye güvenmeyen, çok kaynaklı (OSV, CISA KEV, EPSS) eşleştirme yapan zafiyet takip ve önceliklendirme platformu.
+npm ve NuGet bağımlılıklarındaki zafiyetleri tek bir kaynağa (NVD) güvenmeden bulan ve **"önce hangisini düzelteyim?"** sorusunu cevaplayan zafiyet takip platformu.
 
-**Teknolojiler:** ASP.NET Core MVC (.NET 10), MSSQL (DB First), EF Core, Hangfire, DbUp, Serilog, xUnit.
+**Canlı:** https://radar.muhammedasef.com
+
+![Giriş ekranı](docs/screenshots/giris.png)
+
+| Genel bakış | Bulgu detayı |
+|---|---|
+| ![Genel bakış](docs/screenshots/genel-bakis.png) | ![Bulgu detayı](docs/screenshots/bulgu.png) |
+
+**Teknolojiler:** ASP.NET Core MVC (.NET 10), MSSQL (DB First), EF Core, Hangfire, DbUp, Serilog, xUnit, Docker, GitHub Actions.
+
+## Ne yapar?
+
+- **Envanter:** Varlıkları (uygulama, servis) gruplar altında toplar. `package-lock.json`, `packages.lock.json` veya CycloneDX SBOM yüklenir; bileşenler otomatik çıkarılır.
+- **Çok kaynaklı eşleştirme:** OSV (npm, NuGet, kötü amaçlı paket kayıtları), CISA KEV (aktif istismar) ve EPSS (istismar olasılığı) verileri düzenli çekilir. Sürüm aralıkları SemVer kurallarıyla değerlendirilir; aralığı okunamayan kayıt "güvenli" sayılmaz, düşük güvenle işaretlenir.
+- **Önceliklendirme:** CVSS, EPSS, KEV ve varlığın kritikliği, ortamı, internete açıklığı birlikte puanlanır. Sonuç dört kova: *Hemen*, *Bu hafta*, *Planla*, *İzle*.
+- **Bulgu yaşam döngüsü:** Açık → İncelemede → Düzeltildi / Risk kabul (süreli, gerekçeli) / Yanlış alarm. Bileşen güncellenince bulgu kendiliğinden kapanır; eski sürüme dönülürse yeniden açılır. Her geçiş geçmişe yazılır.
+- **Bildirimler:** Yeni bulgular kanal başına tek mailde toplanır. Açık bir bulgu sonradan CISA KEV listesine girerse veya önceliği yükselirse ayrıca haber verilir. Her pazartesi grup bazında haftalık özet gelir.
+- **Ekip:** Grup üyeliği ve rolleri (sahip, düzenleyici, görüntüleyici). Kimse üyesi olmadığı grubun verisini göremez; Admin dahil.
+
+## Nasıl çalışır?
+
+```mermaid
+flowchart LR
+    subgraph Kaynaklar
+        OSV[OSV<br/>npm · NuGet · MAL]
+        KEV[CISA KEV]
+        EPSS[FIRST EPSS]
+    end
+
+    subgraph Worker[Worker · Hangfire]
+        Sync[Senkronizasyon<br/>6 saatte bir]
+        Match[Eşleştirme<br/>tek işçili kuyruk]
+        Notify[Bildirim<br/>anlık + haftalık]
+    end
+
+    Web[Web · MVC] -->|dosya yükleme| DB[(MSSQL)]
+    OSV & KEV & EPSS --> Sync --> DB
+    Sync -->|veri değişti| Match
+    Web -->|envanter değişti| Match
+    Match -->|bulgu + risk| DB
+    Match -->|yeni / önceliği yükselen| Notify -->|SMTP| Mail[E-posta]
+```
 
 ## Mimari
 
@@ -58,3 +99,7 @@ Ayrıntılı tasarım: proje dokümanı `zafiyet-radari-guvenlik.md`.
 - **CI (her push/PR):** build, test, gitleaks (tüm git geçmişi), CodeQL (C# + workflow dosyaları).
 - **CD (main):** chiseled imajlar → Trivy (yamalı HIGH/CRITICAL varsa durur) → CycloneDX SBOM → GHCR → SSH forced command ile `zr-deploy` (migrate, sağlık kontrolü, başarısızsa otomatik geri dönüş).
 - Kurulum ve güvenlik kararları: [`deploy/KURULUM.md`](deploy/KURULUM.md).
+
+## Güvenlik açığı bildirimi
+
+Bir açık bulursan lütfen issue açma; [özel güvenlik bildirimi](https://github.com/MuhammedAsef/zafiyet-radari/security/advisories/new) gönder. Ayrıntılar: [`SECURITY.md`](SECURITY.md) ve [`/.well-known/security.txt`](https://radar.muhammedasef.com/.well-known/security.txt).

@@ -22,7 +22,8 @@ public partial class NotificationChannel
         string email,
         FindingPriority minPriority,
         bool onlyKev,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        bool weeklyDigest = true)
     {
         name = name?.Trim() ?? string.Empty;
         email = email?.Trim() ?? string.Empty;
@@ -49,6 +50,7 @@ public partial class NotificationChannel
             Name = name,
             Target = email,
             IsEnabled = true,
+            WeeklyDigest = weeklyDigest,
             CreatedAt = now
         };
 
@@ -74,4 +76,9 @@ public partial class NotificationChannel
             && (!rule.OnlyKev || isKev || isMaliciousPackage));
 
     public void SetEnabled(bool enabled) => IsEnabled = enabled;
+
+    /// <summary>Haftalık özet maili. Anlık bildirim kurallarından bağımsızdır; kanal kapalıysa özet de gitmez.</summary>
+    public void SetWeeklyDigest(bool enabled) => WeeklyDigest = enabled;
+
+    public bool ReceivesWeeklyDigest => IsEnabled && WeeklyDigest && ChannelType == NotificationChannelType.Email;
 }

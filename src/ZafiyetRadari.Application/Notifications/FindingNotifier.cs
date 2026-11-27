@@ -5,12 +5,17 @@ namespace ZafiyetRadari.Application.Notifications;
 
 public interface IFindingNotifier
 {
-    Task NotifyAsync(int assetId, IReadOnlyList<NotifiableFinding> findings, CancellationToken cancellationToken);
+    Task NotifyAsync(
+        int assetId,
+        IReadOnlyList<NotifiableFinding> findings,
+        FindingNotificationKind kind,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>
-/// Eşleştirme sonrası: yeni/yeniden açılan bulguları grubun kanal kurallarına göre süzer ve
+/// Eşleştirme sonrası: bulguları grubun kanal kurallarına göre süzer ve
 /// her kanal için TEK bir gönderim işi kuyruğa koyar (180 bulgu = 180 mail değil, 1 özet mail).
+/// Yeni bulgular ve önceliği yükselenler ayrı mail olarak gider: başlık ve tekrar gönderim kuralı farklı.
 /// </summary>
 internal sealed class FindingNotifier(
     INotificationStore store,
@@ -18,7 +23,11 @@ internal sealed class FindingNotifier(
     TimeProvider timeProvider,
     ILogger<FindingNotifier> logger) : IFindingNotifier
 {
-    public async Task NotifyAsync(int assetId, IReadOnlyList<NotifiableFinding> findings, CancellationToken cancellationToken)
+    public async Task NotifyAsync(
+        int assetId,
+        IReadOnlyList<NotifiableFinding> findings,
+        FindingNotificationKind kind,
+        CancellationToken cancellationToken)
     {
         if (findings.Count == 0)
         {
@@ -41,8 +50,17 @@ internal sealed class FindingNotifier(
                 continue;
             }
 
-            scheduler.ScheduleFindingNotification(channel.Id, accepted, now);
-            logger.LogInformation("Kanal {ChannelId} için {Count} bulgu bildirimi kuyruğa alındı.", channel.Id, accepted.Count);
+            if (kind == FindingNotificationKind.Escalated)
+            {
+                scheduler.ScheduleEscalationNotification(channel.Id, accepted, now);
+            }
+            else
+            {
+                scheduler.ScheduleFindingNotification(channel.Id, accepted, now);
+            }
+
+            logger.LogInformation(
+                "Kanal {ChannelId} için {Count} bulgu bildirimi ({Kind}) kuyruğa alındı.", channel.Id, accepted.Count, kind);
         }
     }
 }

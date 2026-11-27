@@ -75,6 +75,9 @@ public sealed class AddChannelFormModel
 
     [Display(Name = "Sadece KEV / kötü amaçlı paket")]
     public bool OnlyKev { get; set; }
+
+    [Display(Name = "Haftalık özet")]
+    public bool WeeklyDigest { get; set; } = true;
 }
 
 public sealed class AddComponentFormModel

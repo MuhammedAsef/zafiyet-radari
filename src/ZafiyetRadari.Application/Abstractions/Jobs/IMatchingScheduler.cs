@@ -15,4 +15,10 @@ public interface IMatchingScheduler
 public interface INotificationScheduler
 {
     void ScheduleFindingNotification(int channelId, IReadOnlyCollection<long> findingIds, DateTimeOffset triggeredAt);
+
+    /// <summary>Önceliği yükselen (ör. KEV'e eklenen) açık bulgular için ayrı mail.</summary>
+    void ScheduleEscalationNotification(int channelId, IReadOnlyCollection<long> findingIds, DateTimeOffset triggeredAt);
+
+    /// <summary>Kanal başına ayrı iş: bir kanalın SMTP hatası diğerlerinin özetini engellemez.</summary>
+    void ScheduleWeeklyDigest(int channelId, DateTimeOffset triggeredAt);
 }

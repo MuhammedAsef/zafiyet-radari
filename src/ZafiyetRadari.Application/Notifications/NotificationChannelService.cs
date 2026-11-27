@@ -21,6 +21,8 @@ public interface INotificationChannelService
 
     Task<Result> SetEnabledAsync(int assetGroupId, int channelId, bool enabled, CancellationToken cancellationToken = default);
 
+    Task<Result> SetWeeklyDigestAsync(int assetGroupId, int channelId, bool enabled, CancellationToken cancellationToken = default);
+
     Task<Result> DeleteAsync(int assetGroupId, int channelId, CancellationToken cancellationToken = default);
 
     Task<Result> SendTestAsync(int assetGroupId, int channelId, CancellationToken cancellationToken = default);
@@ -92,7 +94,7 @@ internal sealed class NotificationChannelService(
         }
 
         var channel = NotificationChannel.CreateEmail(
-            command.AssetGroupId, command.Name, email, command.MinPriority, command.OnlyKev, timeProvider.GetUtcNow());
+            command.AssetGroupId, command.Name, email, command.MinPriority, command.OnlyKev, timeProvider.GetUtcNow(), command.WeeklyDigest);
         if (channel.IsFailure)
         {
             return Result.Failure(channel.Error);
@@ -112,6 +114,19 @@ internal sealed class NotificationChannelService(
         }
 
         channel.Value.SetEnabled(enabled);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    public async Task<Result> SetWeeklyDigestAsync(int assetGroupId, int channelId, bool enabled, CancellationToken cancellationToken = default)
+    {
+        var channel = await LoadOwnedChannelAsync(assetGroupId, channelId, cancellationToken);
+        if (channel.IsFailure)
+        {
+            return Result.Failure(channel.Error);
+        }
+
+        channel.Value.SetWeeklyDigest(enabled);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }

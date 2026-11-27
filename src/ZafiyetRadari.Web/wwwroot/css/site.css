@@ -762,13 +762,254 @@ dl.row dt { font-weight: 500; color: var(--zr-muted); }
 }
 
 @media (min-width: 992px) {
-  .auth-aside { display: flex; flex-direction: column; justify-content: space-between; }
+  .auth-aside { display: flex; flex-direction: column; }
+  .auth-aside-body { margin-block: auto; }
 }
 
-.auth-aside .scope {
-  width: 340px;
-  height: 340px;
-  margin: 2rem 0;
+/* --------------------------------------------------------------------------
+   Giriş paneli: 3B holografik radar (wwwroot/js/holo.js imleç eğimini verir)
+   Saf CSS 3B; WebGL/kütüphane yok. Işın yüksekliği = öncelik (Hemen en uzun).
+   Tarayıcı 6 sn'de bir tur atar; her hedef, tarayıcının açısına göre gecikmeli
+   olarak tam o anda parlar (gecikme = açı / 360 * 6 sn).
+   -------------------------------------------------------------------------- */
+
+@property --holo-sway { syntax: "<angle>";  inherits: true; initial-value: 0deg; }
+@property --holo-px   { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --holo-py   { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+.holo {
+  --holo-size: 400px;
+  --holo-tilt: 62deg;
+  --holo-period: 6s;
+  --holo-rx: calc(var(--holo-tilt) + var(--holo-py) * 7deg);
+  --holo-rz: calc(var(--holo-sway) + var(--holo-px) * 14deg);
+
+  position: relative;
+  width: min(100%, 520px);
+  height: 440px;
+  margin: 0 0 1rem;
+  perspective: 1000px;
+  perspective-origin: 50% 15%;
+  animation: holo-sway 16s ease-in-out infinite alternate;
+  transition: --holo-px 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), --holo-py 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes holo-sway {
+  from { --holo-sway: -10deg; }
+  to   { --holo-sway: 10deg; }
+}
+
+.holo-stage {
+  position: absolute;
+  left: calc(50% - var(--holo-size) / 2);
+  top: 60px;
+  width: var(--holo-size);
+  height: var(--holo-size);
+  transform-style: preserve-3d;
+  transform: rotateX(var(--holo-rx)) rotateZ(var(--holo-rz));
+}
+
+.holo-stage > * {
+  position: absolute;
+  transform-style: preserve-3d;
+}
+
+/* Zemin ızgarası: diskin altında ufka doğru sönen ağ */
+.holo-floor {
+  inset: -60%;
+  background:
+    repeating-linear-gradient(0deg, rgba(52, 224, 180, 0.09) 0 1px, transparent 1px 36px),
+    repeating-linear-gradient(90deg, rgba(52, 224, 180, 0.09) 0 1px, transparent 1px 36px);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+  mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+  transform: translateZ(-2px);
+}
+
+.holo-disc {
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(52, 224, 180, 0.45);
+  background:
+    linear-gradient(rgba(52, 224, 180, 0.14), rgba(52, 224, 180, 0.14)) center / 1px 100% no-repeat,
+    linear-gradient(rgba(52, 224, 180, 0.14), rgba(52, 224, 180, 0.14)) center / 100% 1px no-repeat,
+    radial-gradient(circle, transparent 0 32%, rgba(52, 224, 180, 0.2) 32.3% 32.7%, transparent 33%),
+    radial-gradient(circle, transparent 0 65%, rgba(52, 224, 180, 0.16) 65.3% 65.7%, transparent 66%),
+    radial-gradient(circle, rgba(11, 40, 44, 0.92) 0%, rgba(8, 20, 32, 0.92) 72%);
+  box-shadow: 0 0 60px rgba(52, 224, 180, 0.12), inset 0 0 40px rgba(52, 224, 180, 0.08);
+}
+
+/* Kenar derece çentikleri */
+.holo-ticks {
+  inset: -4%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(52, 224, 180, 0.55) 0 0.6deg, transparent 0.6deg 10deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 0 47%, #000 47.5% 50%, transparent 50.5%);
+  mask-image: radial-gradient(circle, transparent 0 47%, #000 47.5% 50%, transparent 50.5%);
+  transform: translateZ(1px);
+}
+
+/* Diskin üstünde süzülen halkalar */
+.holo-ring { border-radius: 50%; }
+
+.holo-ring-outer {
+  inset: 10%;
+  border: 1px dashed rgba(52, 224, 180, 0.35);
+  transform: translateZ(26px);
+  animation: holo-turn 40s linear infinite reverse;
+}
+
+.holo-ring-inner {
+  inset: 34%;
+  border: 1px solid rgba(52, 224, 180, 0.28);
+  border-top-color: rgba(52, 224, 180, 0.8);
+  transform: translateZ(48px);
+  animation: holo-turn 9s linear infinite;
+}
+
+.holo-ring-outer { --holo-z: 26px; }
+.holo-ring-inner { --holo-z: 48px; }
+
+@keyframes holo-turn {
+  from { transform: translateZ(var(--holo-z)) rotate(0deg); }
+  to   { transform: translateZ(var(--holo-z)) rotate(360deg); }
+}
+
+.holo-sweep {
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg 285deg, rgba(52, 224, 180, 0.06) 300deg, rgba(52, 224, 180, 0.5) 359deg, rgba(160, 255, 228, 0.9) 360deg);
+  animation: holo-sweep var(--holo-period) linear infinite;
+}
+
+@keyframes holo-sweep {
+  from { transform: translateZ(2px) rotate(0deg); }
+  to   { transform: translateZ(2px) rotate(360deg); }
+}
+
+.holo-core {
+  left: calc(50% - 5px);
+  top: calc(50% - 5px);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--zr-phosphor);
+  box-shadow: 0 0 18px 4px rgba(52, 224, 180, 0.6);
+  transform: translateZ(3px);
+}
+
+/* Hedefler: konumlar kutupsal (açı saat yönünde, tepeden) -> yüzde */
+.holo-target {
+  --h: 60px;
+  --delay: 0s;
+  width: 0;
+  height: 0;
+}
+
+.holo-target-now  { --c: var(--zr-now);  color: var(--c);  left: 69.3%; top: 27%;   --h: 124px; --delay: 0.667s; } /* 40°  */
+.holo-target-week { --c: var(--zr-week); color: var(--c); left: 17.1%; top: 69%;   --h: 84px;  --delay: 4s;     } /* 240° */
+.holo-target-plan { --c: var(--zr-plan); color: var(--c); left: 35.9%; top: 33.1%; --h: 56px;  --delay: 5.333s; } /* 320° */
+
+.holo-target > span { position: absolute; display: block; }
+
+.holo-dot {
+  left: -5px;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 14px 3px currentColor;
+  transform: translateZ(3px);
+}
+
+.holo-ping {
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  opacity: 0;
+  animation: holo-ping var(--holo-period) ease-out var(--delay) infinite;
+}
+
+@keyframes holo-ping {
+  0%   { transform: translateZ(2px) scale(1); opacity: 0.95; }
+  28%  { transform: translateZ(2px) scale(7); opacity: 0; }
+  100% { transform: translateZ(2px) scale(7); opacity: 0; }
+}
+
+/* Dikey ışın: tabanından -90° kalkan iki çapraz düzlem */
+.holo-beam {
+  left: -9px;
+  top: calc(var(--h) * -1);
+  width: 18px;
+  height: var(--h);
+  transform-origin: 50% 100%;
+  transform: rotateX(-90deg);
+  background: linear-gradient(to top, currentColor, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 45% 55%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 45% 55%, transparent);
+  opacity: 0.7;
+  animation: holo-flash var(--holo-period) ease-out var(--delay) infinite;
+}
+
+.holo-beam-cross { transform: rotateZ(90deg) rotateX(-90deg); }
+
+@keyframes holo-flash {
+  0%   { opacity: 1; }
+  30%  { opacity: 0.7; }
+  100% { opacity: 0.7; }
+}
+
+/* Etiket: ışının tepesinde, sahnenin eğimini geri alıp ekrana dönük durur */
+.holo-tag {
+  left: 0;
+  bottom: 0;
+  padding: 0.35rem 0.6rem 0.4rem;
+  white-space: nowrap;
+  font-family: var(--zr-display);
+  font-size: 0.78rem;
+  line-height: 1.25;
+  color: var(--zr-text);
+  background: rgba(8, 17, 31, 0.88);
+  border: 1px solid var(--zr-line-strong);
+  border-left: 2px solid var(--c);
+  border-radius: 4px;
+  transform-origin: 0 100%;
+  transform:
+    translateZ(var(--h))
+    rotateZ(calc(var(--holo-rz) * -1))
+    rotateX(calc(var(--holo-rx) * -1))
+    translate(10px, -6px);
+  backface-visibility: hidden;
+}
+
+.holo-tag b {
+  color: var(--c);
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+.holo-tag small {
+  display: block;
+  color: var(--zr-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holo,
+  .holo-sweep,
+  .holo-ring-outer,
+  .holo-ring-inner,
+  .holo-ping,
+  .holo-beam {
+    animation: none;
+    transition: none;
+  }
+
+  .holo-sweep { transform: translateZ(2px) rotate(40deg); }
 }
 
 .auth-aside h2 {

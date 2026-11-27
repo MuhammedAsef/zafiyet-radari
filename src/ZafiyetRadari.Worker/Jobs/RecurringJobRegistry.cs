@@ -44,6 +44,12 @@ internal static class RecurringJobRegistry
             job => job.EnqueueFullAsync(),
             "45 2 * * *");
 
+        // Haftalık özet: pazartesi 06:30 UTC = 09:30 İstanbul. Günlük eşleştirmeden (02:45) sonra, güncel verilerle.
+        jobs.AddOrUpdate<NotificationJob>(
+            "notify-weekly-digest",
+            job => job.EnqueueWeeklyDigestsAsync(CancellationToken.None),
+            "30 6 * * 1");
+
         // EPSS skorları her gün ~13:30 UTC'de yayımlanır.
         jobs.AddOrUpdate<SyncVulnerabilityFeedJob>(
             "vuln-sync-epss",

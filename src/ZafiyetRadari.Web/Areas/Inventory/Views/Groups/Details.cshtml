@@ -148,8 +148,9 @@
     <section class="mt-5">
         <h2 class="h5 mb-2">Bildirimler</h2>
         <p class="small text-secondary">
-            Yeni veya yeniden açılan bulgular, eşleştirme bittiğinde kanal başına tek bir özet mail olarak gönderilir.
-            Alıcı, e-postası doğrulanmış bir grup üyesi olmalı.
+            Yeni veya yeniden açılan bulgular, eşleştirme bittiğinde kanal başına tek bir mail olarak gönderilir.
+            Açık bir bulgunun önceliği yükselirse (ör. CISA KEV listesine eklenirse) ayrıca haber verilir.
+            Haftalık özet her pazartesi 09:30'da gelir. Alıcı, e-postası doğrulanmış bir grup üyesi olmalı.
         </p>
 
         @if (notifications.Channels.Count == 0)
@@ -185,6 +186,7 @@
                                     {
                                         <span class="badge text-bg-danger ms-1">sadece KEV / kötü amaçlı</span>
                                     }
+                                    <div class="text-secondary">Haftalık özet: @(channel.WeeklyDigest ? "açık" : "kapalı")</div>
                                 </td>
                                 <td class="small">@(channel.IsEnabled ? "Açık" : "Kapalı")</td>
                                 <td class="small text-secondary">@(channel.LastSentAt?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "–")</td>
@@ -195,6 +197,11 @@
                                             <form asp-action="TestChannel" asp-route-id="@Model.Group.Id" method="post" class="m-0">
                                                 <input type="hidden" name="channelId" value="@channel.Id" />
                                                 <button type="submit" class="btn btn-sm btn-outline-secondary">Test</button>
+                                            </form>
+                                            <form asp-action="ToggleDigest" asp-route-id="@Model.Group.Id" method="post" class="m-0">
+                                                <input type="hidden" name="channelId" value="@channel.Id" />
+                                                <input type="hidden" name="enabled" value="@(channel.WeeklyDigest ? "false" : "true")" />
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary">@(channel.WeeklyDigest ? "Özeti kapat" : "Özeti aç")</button>
                                             </form>
                                             <form asp-action="ToggleChannel" asp-route-id="@Model.Group.Id" method="post" class="m-0">
                                                 <input type="hidden" name="channelId" value="@channel.Id" />
@@ -247,6 +254,10 @@
                         <div class="form-check">
                             <input asp-for="NewChannel.OnlyKev" class="form-check-input" />
                             <label asp-for="NewChannel.OnlyKev" class="form-check-label small"></label>
+                        </div>
+                        <div class="form-check">
+                            <input asp-for="NewChannel.WeeklyDigest" class="form-check-input" />
+                            <label asp-for="NewChannel.WeeklyDigest" class="form-check-label small"></label>
                         </div>
                     </div>
                     <div class="col-md-2">
