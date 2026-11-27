@@ -37,7 +37,7 @@ Katman kuralları `tests/ZafiyetRadari.UnitTests/Architecture` altındaki testle
 - **Least privilege:** Web `zr_web`, Worker `zr_worker` login'iyle bağlanır; DDL yetkileri yoktur. Yetkiler `db/migrations/0001_security_roles.sql` içinde.
 - **SQL injection:** EF Core LINQ veya `FromSql($"...")`. Ham ADO.NET'te sadece `SqlCommandExtensions.WithParameter` (tip + boyut zorunlu). `FromSqlRaw`, `ExecuteSqlRaw`, `AddWithValue`, `Html.Raw`, `MD5`, `SHA1`, `Random` derleme hatası verir (`BannedSymbols.txt`).
 - **Tedarik zinciri:** NuGet Audit; zafiyetli doğrudan/dolaylı paket build'i kırar.
-- **Kimlik:** ASP.NET Core Identity (PBKDF2), 12+ karakter şifre (NIST 800-63B), 5 denemede 15 dk kilit, `__Host-` cookie, varsayılan kapalı yetkilendirme (FallbackPolicy). Admin sadece CLI ile verilir.
+- **Kimlik:** ASP.NET Core Identity (PBKDF2), 12+ karakter ve büyük harf, küçük harf, rakam, özel karakter gruplarından en az 3'ü olan, e-posta adını içermeyen şifre (kayıt formunda canlı kontrol listesi; kurallar sunucuda `PasswordPolicy` ile uygulanır), 5 denemede 15 dk kilit, `__Host-` cookie, varsayılan kapalı yetkilendirme (FallbackPolicy). Admin sadece CLI ile verilir.
 - **IDOR:** Varlık grubu verisine erişim `AssetGroupAccessHandler` ile grup üyeliğine bağlı; Admin bile üye olmadığı grubu göremez.
 - **Audit:** Giriş, başarısız giriş, kilitlenme, kayıt, çıkış ve 403'ler hash zincirli `ops.AuditLog`'a yazılır.
 - **Web:** CSP (inline yok), HSTS, nosniff, frame-ancestors none, Referrer/Permissions-Policy, `Server` başlığı kapalı, global CSRF koruması, IP bazlı rate limiting.

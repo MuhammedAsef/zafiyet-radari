@@ -8,7 +8,10 @@ services:
       MSSQL_PID: "Developer"
       MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Dev_Passw0rd!}"
     ports:
-      - "127.0.0.1:1433:1433"   # sadece bu makine; yerel ağa açık değil
+      # Sadece bu makine (IPv4 ve IPv6 loopback); yerel ağa açık değil.
+      # İkisi birden: Windows "localhost"u önce ::1 olarak çözebiliyor.
+      - "127.0.0.1:1433:1433"
+      - "[::1]:1433:1433"
     volumes:
       - mssql-data:/var/opt/mssql
     healthcheck:

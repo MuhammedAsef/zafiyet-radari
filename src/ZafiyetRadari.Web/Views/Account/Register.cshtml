@@ -1,3 +1,4 @@
+@using ZafiyetRadari.Web.Security
 @model ZafiyetRadari.Web.Models.Account.RegisterViewModel
 @{
     ViewData["Title"] = "Kayıt";
@@ -6,31 +7,68 @@
 <h1 class="h3 mb-1">Hesap oluştur</h1>
 <p class="text-secondary mb-4">Varlıklarını ekle, bağımlılık dosyanı yükle, zafiyetleri takip et.</p>
 
-<form asp-action="Register" method="post" novalidate>
+<form asp-action="Register" method="post" novalidate data-register-form>
     <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
 
     <div class="mb-3">
         <label asp-for="Email" class="form-label"></label>
-        <input asp-for="Email" class="form-control" autocomplete="email" autofocus />
+        <input asp-for="Email" class="form-control" autocomplete="email" autofocus data-email-input />
         <span asp-validation-for="Email" class="text-danger small"></span>
     </div>
 
     <div class="mb-3">
         <label asp-for="Password" class="form-label"></label>
-        <input asp-for="Password" class="form-control" autocomplete="new-password" />
-        <div class="form-text">En az @ZafiyetRadari.Web.Security.IdentitySetup.MinPasswordLength karakter. Uzun bir parola cümlesi, karmaşık kısa bir şifreden daha güvenlidir.</div>
+        <input asp-for="Password" class="form-control" autocomplete="new-password"
+               aria-describedby="password-rules" data-password-input />
         <span asp-validation-for="Password" class="text-danger small"></span>
+
+        @* Kurallar sunucuda da aynen uygulanır (PasswordPolicy); bu liste sadece yazarken geri bildirim verir. *@
+        <div id="password-rules" class="password-rules"
+             data-password-rules
+             data-min-length="@PasswordPolicy.MinLength"
+             data-required-categories="@PasswordPolicy.RequiredCategories"
+             data-email-fragment="@PasswordPolicy.MinEmailFragmentLength">
+            <div class="password-meter" aria-hidden="true">
+                <span class="password-meter-bar" data-password-meter data-level="0"></span>
+            </div>
+
+            <ul class="rule-list">
+                <li class="rule" data-rule="length">En az @PasswordPolicy.MinLength karakter</li>
+            </ul>
+
+            <p class="rule-group-title" data-rule-group>
+                Bu dört gruptan en az @PasswordPolicy.RequiredCategories tanesi
+                <span class="rule-count" data-category-count>0/@PasswordPolicy.TotalCategories</span>
+            </p>
+            <ul class="rule-list rule-list-grid">
+                <li class="rule" data-rule="upper">Büyük harf (A–Z)</li>
+                <li class="rule" data-rule="lower">Küçük harf (a–z)</li>
+                <li class="rule" data-rule="digit">Rakam (0–9)</li>
+                <li class="rule" data-rule="symbol">Özel karakter (!$#%)</li>
+            </ul>
+
+            <ul class="rule-list">
+                <li class="rule" data-rule="email">E-posta adresinin @@ öncesini içermiyor</li>
+            </ul>
+        </div>
     </div>
 
-    <div class="mb-3">
+    <div class="mb-4">
         <label asp-for="ConfirmPassword" class="form-label"></label>
-        <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+        <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" data-password-confirm />
         <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+        <ul class="rule-list mt-2">
+            <li class="rule" data-rule="match">Şifreler eşleşiyor</li>
+        </ul>
     </div>
 
-    <button type="submit" class="btn btn-primary w-100">Kayıt ol</button>
+    <button type="submit" class="btn btn-primary w-100" data-register-submit>Kayıt ol</button>
 </form>
 
 <p class="small text-secondary mt-4">
     Zaten hesabın var mı? <a asp-action="Login">Giriş yap</a>
 </p>
+
+@section Scripts {
+    <script src="~/js/password-rules.js" asp-append-version="true"></script>
+}

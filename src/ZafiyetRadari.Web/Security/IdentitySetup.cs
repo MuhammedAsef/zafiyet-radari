@@ -8,8 +8,8 @@ namespace ZafiyetRadari.Web.Security;
 
 public static class IdentitySetup
 {
-    public const int MinPasswordLength = 12;
-    public const int MaxPasswordLength = 128; // çok uzun şifrelerle hash hesaplatıp sunucuyu yorma (DoS) önlemi
+    public const int MinPasswordLength = PasswordPolicy.MinLength;
+    public const int MaxPasswordLength = PasswordPolicy.MaxLength;
 
     public static IServiceCollection AddWebIdentity(
         this IServiceCollection services,
@@ -19,7 +19,8 @@ public static class IdentitySetup
         services
             .AddIdentity<IdentityUser, IdentityRole>(options =>
             {
-                // NIST SP 800-63B: uzunluk zorunlu, karakter türü kompozisyonu zorunlu değil.
+                // Uzunluk burada; "4 gruptan en az 3'ü" ve "e-posta adını içermez" kuralları
+                // PasswordCompositionValidator'da (Identity'nin Require* seçenekleri her grubu tek tek zorunlu kılar).
                 options.Password.RequiredLength = MinPasswordLength;
                 options.Password.RequiredUniqueChars = 4;
                 options.Password.RequireDigit = false;
@@ -38,6 +39,7 @@ public static class IdentitySetup
                 options.SignIn.RequireConfirmedAccount = false;
             })
             .AddInfrastructureStores()
+            .AddPasswordValidator<PasswordCompositionValidator>()
             .AddErrorDescriber<TurkishIdentityErrorDescriber>()
             .AddDefaultTokenProviders();
 

@@ -47,10 +47,29 @@
                         CycloneDX JSON SBOM, <code>package-lock.json</code> veya <code>packages.lock.json</code>.
                         En fazla @InventoryLimits.MaxUploadMegabytes MB. Biçim içerikten tanınır.
                     </p>
-                    <form asp-action="Upload" asp-route-id="@asset.Id" method="post" enctype="multipart/form-data" class="d-flex gap-2">
-                        <input type="file" name="file" accept=".json,application/json" class="form-control form-control-sm" required aria-label="Envanter dosyası" />
-                        <button type="submit" class="btn btn-sm btn-primary text-nowrap">Yükle</button>
+                    <form asp-action="Upload" asp-route-id="@asset.Id" method="post" enctype="multipart/form-data"
+                          class="file-upload" data-file-upload data-max-bytes="@InventoryLimits.MaxUploadBytes">
+                        @* Görünmez dosya girişi alanın tamamını kaplar: tıklama ve sürükle-bırak tarayıcının kendi davranışıyla çalışır. *@
+                        <label class="file-drop" data-file-drop>
+                            <input type="file" name="file" accept=".json,application/json" class="file-drop-input"
+                                   required aria-label="Envanter dosyası" data-file-input />
+                            <span class="file-drop-title" data-file-name>Dosya seç ya da buraya sürükle</span>
+                            <span class="file-drop-meta" data-file-meta>.json · en fazla @InventoryLimits.MaxUploadMegabytes MB</span>
+                        </label>
+                        <div class="file-upload-footer">
+                            <span class="file-upload-error" data-file-error role="alert"></span>
+                            <button type="submit" class="btn btn-sm btn-primary text-nowrap" data-file-submit>Yükle</button>
+                        </div>
                     </form>
+                    @{ var lastUpload = asset.RecentUploads.FirstOrDefault(); }
+                    @if (lastUpload is not null)
+                    {
+                        <p class="file-upload-last">
+                            Son yükleme: <strong>@lastUpload.OriginalFileName</strong>
+                            · @lastUpload.ComponentCount paket
+                            · @lastUpload.UploadedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                        </p>
+                    }
                 </div>
             </div>
         </div>
@@ -196,3 +215,7 @@
         </div>
     }
 </section>
+
+@section Scripts {
+    <script src="~/js/file-upload.js" asp-append-version="true"></script>
+}
