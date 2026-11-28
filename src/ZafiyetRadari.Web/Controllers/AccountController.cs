@@ -28,7 +28,9 @@ public sealed class AccountController(
     [HttpGet]
     [AllowAnonymous]
     public IActionResult Login(string? returnUrl = null) =>
-        View(new LoginViewModel { ReturnUrl = returnUrl });
+        IsSignedIn
+            ? RedirectToLocal(returnUrl)
+            : View(new LoginViewModel { ReturnUrl = returnUrl });
 
     [HttpPost]
     [AllowAnonymous]
@@ -64,13 +66,20 @@ public sealed class AccountController(
 
     [HttpGet]
     [AllowAnonymous]
-    public IActionResult Register() => View(new RegisterViewModel());
+    public IActionResult Register() =>
+        IsSignedIn ? RedirectToHome() : View(new RegisterViewModel());
 
     [HttpPost]
     [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.Authentication)]
     public async Task<IActionResult> Register(RegisterViewModel model, CancellationToken cancellationToken)
     {
+        // Oturum açıkken (ör. mobilde sayfa yenilenip form tekrar gönderilirse) ikinci hesap açılmaz.
+        if (IsSignedIn)
+        {
+            return RedirectToHome();
+        }
+
         if (!ModelState.IsValid)
         {
             return View(model);
@@ -81,9 +90,10 @@ public sealed class AccountController(
 
         if (!created.Succeeded)
         {
-            foreach (var error in created.Errors)
+            // DuplicateUserName ve DuplicateEmail aynı mesajı üretir (kullanıcı adı = e-posta); her mesaj bir kez gösterilir.
+            foreach (var description in created.Errors.Select(e => e.Description).Distinct(StringComparer.Ordinal))
             {
-                ModelState.AddModelError(string.Empty, error.Description);
+                ModelState.AddModelError(string.Empty, description);
             }
 
             return View(model);
@@ -99,7 +109,7 @@ public sealed class AccountController(
         var sent = await TrySendConfirmationAsync(user, cancellationToken);
         TempData[sent ? "Success" : "Error"] = LastConfirmationMessage;
 
-        return RedirectToAction(nameof(HomeController.Index), "Home");
+        return RedirectToHome();
     }
 
     [HttpGet]
@@ -223,11 +233,16 @@ public sealed class AccountController(
         }
     }
 
+    private bool IsSignedIn => User.Identity?.IsAuthenticated == true;
+
+    private RedirectToActionResult RedirectToHome() =>
+        RedirectToAction(nameof(HomeController.Index), "Home");
+
     // Open redirect önlemi: sadece uygulama içi adreslere dönülür.
     private IActionResult RedirectToLocal(string? returnUrl) =>
         Url.IsLocalUrl(returnUrl)
             ? LocalRedirect(returnUrl)
-            : RedirectToAction(nameof(HomeController.Index), "Home");
+            : RedirectToHome();
 
     private Task AuditAsync(string eventType, string? userId, string? userName, CancellationToken cancellationToken) =>
         auditTrail.AppendAsync(

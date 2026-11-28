@@ -376,6 +376,9 @@ a.card:hover { border-color: var(--zr-line-strong); }
 .card .table-responsive,
 .card .table { border: 0; padding: 0; background: transparent; }
 
+/* border:0 kısayolu tablo kenar rengini currentColor'a (beyaz) çekiyordu; satır çizgileri temaya döner. */
+.card .table { border-color: var(--bs-table-border-color); }
+
 /* Önem çipleri: dolu blok yerine renkli nokta + tonlu zemin */
 .badge {
   font-family: var(--zr-body);
@@ -1290,4 +1293,79 @@ dl.row dt { font-weight: 500; color: var(--zr-muted); }
   .file-drop {
     transition: none;
   }
+}
+
+/* ---------------------------------------------------------------
+   Mobil tablolar: 768px altında her satır bir kart, her hücre
+   "etiket: değer" satırı. Etiketler table-stack.js ile thead'den
+   data-label'a kopyalanır (inline script yok, CSP uyumlu).
+   --------------------------------------------------------------- */
+@media (max-width: 767.98px) {
+  .table-stack > thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .table-stack,
+  .table-stack > tbody,
+  .table-stack > tbody > tr,
+  .table-stack > tbody > tr > td {
+    display: block;
+    width: 100%;
+  }
+
+  .table-stack > tbody > tr {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--zr-line);
+  }
+
+  .table-stack > tbody > tr:last-child { border-bottom: 0; }
+
+  .table-stack > tbody > tr > td {
+    position: relative;
+    min-height: 1.75rem;
+    padding: 0.3rem 0 0.3rem 42%;
+    border-bottom-width: 0;
+    text-align: left !important;
+    overflow-wrap: anywhere;
+  }
+
+  .table-stack > tbody > tr > td::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 0.3rem;
+    left: 0;
+    width: 38%;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--zr-muted);
+    overflow-wrap: normal;
+  }
+
+  /* Etiketsiz hücreler (boş durum satırları, colspan) tam genişlik */
+  .table-stack > tbody > tr > td:not([data-label]) { padding-left: 0; }
+  .table-stack > tbody > tr > td:not([data-label])::before { content: none; }
+
+  /* Hücre içindeki form/buton grupları sola hizalı ve sarılabilir; butonlar harf harf kırılmaz */
+  .table-stack > tbody > tr > td .d-flex,
+  .table-stack > tbody > tr > td .d-inline-flex {
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+  }
+
+  .table-stack > tbody > tr > td .btn {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
+  .table-stack .finding-summary {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .table-responsive:has(> .table-stack) { overflow-x: visible; }
 }
